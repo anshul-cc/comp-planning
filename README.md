@@ -1,4 +1,4 @@
-# Compensation Management System
+# CompPilot
 
 A comprehensive Annual Operating Plan (AOP), Budget, Headcount, and Compensation Management System built with Next.js 14.
 
