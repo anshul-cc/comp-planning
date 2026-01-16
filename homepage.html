@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keka - Your People Enabler | HR & Payroll Software</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a24;
+            --bg-card-hover: #222230;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #6b6b7b;
+            --accent-primary: #6366f1;
+            --accent-secondary: #8b5cf6;
+            --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --border-color: #2a2a3a;
+            --success: #10b981;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Navigation */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(10, 10, 15, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-primary);
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+            font-size: 0.95rem;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+        }
+
+        .btn-ghost:hover {
+            color: var(--text-primary);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .btn-primary {
+            background: var(--accent-gradient);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 8rem 2rem 4rem;
+            background: radial-gradient(ellipse at top, #1a1a2e 0%, var(--bg-primary) 70%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+            top: -200px;
+            right: -100px;
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
+            bottom: -100px;
+            left: -100px;
+        }
+
+        .hero-content {
+            max-width: 900px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 50px;
+            color: var(--accent-primary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 2rem;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #ffffff 0%, #a0a0b0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero h1 span {
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 2.5rem;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .hero-buttons .btn {
+            padding: 1rem 2rem;
+            font-size: 1rem;
+        }
+
+        /* Trusted Section */
+        .trusted {
+            padding: 4rem 2rem;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .trusted-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .trusted p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+        }
+
+        .trusted-logos {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 3rem;
+            flex-wrap: wrap;
+            opacity: 0.6;
+        }
+
+        .trusted-logo {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 6rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .section-header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--accent-primary);
+            transform: translateY(-5px);
+        }
+
+        .feature-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--accent-gradient);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Testimonials */
+        .testimonials {
+            padding: 6rem 2rem;
+            background: var(--bg-secondary);
+        }
+
+        .testimonials-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .testimonial-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+        }
+
+        .testimonial-content {
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            font-style: italic;
+        }
+
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .author-avatar {
+            width: 50px;
+            height: 50px;
+            background: var(--accent-gradient);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .author-info h4 {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .author-info p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        /* Industries */
+        .industries {
+            padding: 6rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .industries-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .industry-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .industry-card:hover {
+            border-color: var(--accent-secondary);
+            transform: translateY(-5px);
+        }
+
+        .industry-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .industry-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .industry-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Mobile Features */
+        .mobile-features {
+            padding: 6rem 2rem;
+            background: var(--bg-secondary);
+        }
+
+        .mobile-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .mobile-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .mobile-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .mobile-card:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .mobile-card-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            color: var(--accent-primary);
+            font-size: 1.2rem;
+        }
+
+        .mobile-card h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .mobile-card p {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        /* CTA Section */
+        .cta {
+            padding: 6rem 2rem;
+            text-align: center;
+            background: radial-gradient(ellipse at bottom, #1a1a2e 0%, var(--bg-primary) 70%);
+        }
+
+        .cta-content {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .cta h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .cta p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            padding: 4rem 2rem 2rem;
+        }
+
+        .footer-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 3rem;
+            margin-bottom: 3rem;
+        }
+
+        .footer-brand {
+            max-width: 300px;
+        }
+
+        .footer-brand .logo {
+            margin-bottom: 1rem;
+            display: inline-block;
+        }
+
+        .footer-brand p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .footer-column h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .footer-column ul {
+            list-style: none;
+        }
+
+        .footer-column li {
+            margin-bottom: 0.75rem;
+        }
+
+        .footer-column a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+
+        .footer-column a:hover {
+            color: var(--accent-primary);
+        }
+
+        .footer-bottom {
+            border-top: 1px solid var(--border-color);
+            padding-top: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .footer-bottom p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .footer-social {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .footer-social a {
+            width: 40px;
+            height: 40px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .footer-social a:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+
+            .section-header h2 {
+                font-size: 2rem;
+            }
+
+            .features-grid,
+            .testimonials-grid,
+            .industries-grid,
+            .mobile-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="#" class="logo">keka</a>
+            <ul class="nav-links">
+                <li><a href="#">Products</a></li>
+                <li><a href="#">Customers</a></li>
+                <li><a href="#">Pricing</a></li>
+                <li><a href="#">Resources</a></li>
+                <li><a href="#">About</a></li>
+            </ul>
+            <div class="nav-buttons">
+                <a href="#" class="btn btn-ghost">Login</a>
+                <a href="#" class="btn btn-outline">Take a Tour</a>
+                <a href="#" class="btn btn-primary">Get Free Trial</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <span class="hero-badge">Trusted by 10,000+ Companies</span>
+            <h1>Your <span>People Enabler</span> for Modern HR</h1>
+            <p>Automate your HR processes, run smooth payroll, and build an engaged workforce with our all-in-one HR platform.</p>
+            <div class="hero-buttons">
+                <a href="#" class="btn btn-primary">Get Free Trial</a>
+                <a href="#" class="btn btn-outline">Take a Tour</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trusted Section -->
+    <section class="trusted">
+        <div class="trusted-content">
+            <p>TRUSTED BY LEADING ORGANIZATIONS WORLDWIDE</p>
+            <div class="trusted-logos">
+                <span class="trusted-logo">Zomato</span>
+                <span class="trusted-logo">Dream11</span>
+                <span class="trusted-logo">Vedantu</span>
+                <span class="trusted-logo">PharmEasy</span>
+                <span class="trusted-logo">Licious</span>
+                <span class="trusted-logo">Cred</span>
+                <span class="trusted-logo">Meesho</span>
+                <span class="trusted-logo">Groww</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+        <div class="section-header">
+            <h2>Everything You Need to Manage Your People</h2>
+            <p>Comprehensive HR solutions designed to streamline your workforce management</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">&#128202;</div>
+                <h3>People Analytics</h3>
+                <p>Get real-time insights into your workforce with powerful analytics and customizable dashboards.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#128176;</div>
+                <h3>Automated Payroll</h3>
+                <p>Run error-free payroll with automated tax calculations, compliance, and seamless expense tracking.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#127919;</div>
+                <h3>Performance Management</h3>
+                <p>Drive performance with goals, OKRs, continuous feedback, and comprehensive review cycles.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#128101;</div>
+                <h3>Hiring & Onboarding</h3>
+                <p>Streamline recruitment with ATS, offer management, and automated onboarding workflows.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#9200;</div>
+                <h3>Time & Attendance</h3>
+                <p>Track time, manage shifts, and handle timesheets with GPS-enabled attendance tracking.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#128221;</div>
+                <h3>Project Management</h3>
+                <p>Manage projects, track billable hours, and allocate resources efficiently across teams.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="testimonials">
+        <div class="testimonials-container">
+            <div class="section-header">
+                <h2>Loved by HR Leaders Everywhere</h2>
+                <p>See what our customers have to say about their Keka experience</p>
+            </div>
+            <div class="testimonials-grid">
+                <div class="testimonial-card">
+                    <p class="testimonial-content">"Keka has transformed how we manage our HR operations. The automated payroll alone saves us countless hours every month."</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">RS</div>
+                        <div class="author-info">
+                            <h4>Rahul Sharma</h4>
+                            <p>HR Director, TechCorp India</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <p class="testimonial-content">"The performance management module helped us build a culture of continuous feedback. Our employee engagement scores have never been higher."</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">PM</div>
+                        <div class="author-info">
+                            <h4>Priya Menon</h4>
+                            <p>CHRO, FinanceHub</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <p class="testimonial-content">"Implementation was smooth and the support team is incredibly responsive. Keka truly understands the needs of growing companies."</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">AK</div>
+                        <div class="author-info">
+                            <h4>Amit Kumar</h4>
+                            <p>VP People, RetailMax</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Industries Section -->
+    <section class="industries">
+        <div class="section-header">
+            <h2>Built for Every Industry</h2>
+            <p>Tailored solutions for your specific business needs</p>
+        </div>
+        <div class="industries-grid">
+            <div class="industry-card">
+                <div class="industry-icon">&#128187;</div>
+                <h3>Technology</h3>
+                <p>Scalable solutions for fast-growing tech companies</p>
+            </div>
+            <div class="industry-card">
+                <div class="industry-icon">&#127981;</div>
+                <h3>Manufacturing</h3>
+                <p>Manage complex shift patterns and workforce needs</p>
+            </div>
+            <div class="industry-card">
+                <div class="industry-icon">&#127974;</div>
+                <h3>Financial Services</h3>
+                <p>Compliance-ready solutions for regulated industries</p>
+            </div>
+            <div class="industry-card">
+                <div class="industry-icon">&#128722;</div>
+                <h3>Retail</h3>
+                <p>Handle seasonal workforce and multi-location teams</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mobile Features Section -->
+    <section class="mobile-features">
+        <div class="mobile-container">
+            <div class="section-header">
+                <h2>Empower Your Employees On-the-Go</h2>
+                <p>A powerful mobile experience for your entire workforce</p>
+            </div>
+            <div class="mobile-grid">
+                <div class="mobile-card">
+                    <div class="mobile-card-icon">&#128197;</div>
+                    <div>
+                        <h4>Leave Management</h4>
+                        <p>Apply and approve leaves with a single tap</p>
+                    </div>
+                </div>
+                <div class="mobile-card">
+                    <div class="mobile-card-icon">&#128200;</div>
+                    <div>
+                        <h4>Tax Declarations</h4>
+                        <p>Submit investment proofs and tax declarations easily</p>
+                    </div>
+                </div>
+                <div class="mobile-card">
+                    <div class="mobile-card-icon">&#127942;</div>
+                    <div>
+                        <h4>Recognition</h4>
+                        <p>Celebrate wins and appreciate colleagues instantly</p>
+                    </div>
+                </div>
+                <div class="mobile-card">
+                    <div class="mobile-card-icon">&#9989;</div>
+                    <div>
+                        <h4>Quick Approvals</h4>
+                        <p>Approve requests and expenses on the go</p>
+                    </div>
+                </div>
+                <div class="mobile-card">
+                    <div class="mobile-card-icon">&#128100;</div>
+                    <div>
+                        <h4>Personalization</h4>
+                        <p>Customized experience for every employee</p>
+                    </div>
+                </div>
+                <div class="mobile-card">
+                    <div class="mobile-card-icon">&#128172;</div>
+                    <div>
+                        <h4>Helpdesk</h4>
+                        <p>Raise and track HR queries seamlessly</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="cta-content">
+            <h2>Ready to Transform Your HR?</h2>
+            <p>Join thousands of companies that trust Keka to manage their most important asset - their people.</p>
+            <div class="hero-buttons">
+                <a href="#" class="btn btn-primary">Start Free Trial</a>
+                <a href="#" class="btn btn-outline">Schedule Demo</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="#" class="logo">keka</a>
+                    <p>Empowering organizations to build great workplaces through innovative HR technology.</p>
+                </div>
+                <div class="footer-column">
+                    <h4>Product</h4>
+                    <ul>
+                        <li><a href="#">HR Platform</a></li>
+                        <li><a href="#">Payroll</a></li>
+                        <li><a href="#">Performance</a></li>
+                        <li><a href="#">Hiring</a></li>
+                        <li><a href="#">Time & Attendance</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Company</h4>
+                    <ul>
+                        <li><a href="#">About Us</a></li>
+                        <li><a href="#">Careers</a></li>
+                        <li><a href="#">Press</a></li>
+                        <li><a href="#">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="#">Blog</a></li>
+                        <li><a href="#">Help Center</a></li>
+                        <li><a href="#">API Docs</a></li>
+                        <li><a href="#">Webinars</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="#">Privacy Policy</a></li>
+                        <li><a href="#">Terms of Service</a></li>
+                        <li><a href="#">Security</a></li>
+                        <li><a href="#">GDPR</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Keka. All rights reserved.</p>
+                <div class="footer-social">
+                    <a href="#">in</a>
+                    <a href="#">tw</a>
+                    <a href="#">fb</a>
+                    <a href="#">yt</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

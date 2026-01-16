@@ -1,0 +1,306 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// ============================================
+// USER & AUTH
+// ============================================
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("USER") // ADMIN, HR, FINANCE, MANAGER, USER
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  managedDepartments  Department[]
+  approvals           Approval[]
+  hiringProposals     HiringProposal[]
+  compensationActions CompensationAction[]
+}
+
+// ============================================
+// PLANNING CYCLES
+// ============================================
+
+model PlanningCycle {
+  id        String   @id @default(cuid())
+  name      String   // "FY 2025", "H1 2025"
+  type      String   // ANNUAL, HALF_YEARLY, QUARTERLY
+  startDate DateTime
+  endDate   DateTime
+  status    String   @default("DRAFT") // DRAFT, PLANNING, ACTIVE, CLOSED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  budgetAllocations   BudgetAllocation[]
+  headcountPlans      HeadcountPlan[]
+  hiringProposals     HiringProposal[]
+  compensationCycles  CompensationCycle[]
+  expenses            Expense[]
+}
+
+// ============================================
+// ORGANIZATION STRUCTURE
+// ============================================
+
+model CostCenter {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  type      String   @default("OPEX") // OPEX, CAPEX
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  departments       Department[]
+  budgetAllocations BudgetAllocation[]
+  expenses          Expense[]
+}
+
+model Department {
+  id           String   @id @default(cuid())
+  name         String
+  code         String   @unique
+  parentId     String?
+  managerId    String?
+  costCenterId String?
+  location     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  parent            Department?        @relation("DepartmentHierarchy", fields: [parentId], references: [id])
+  children          Department[]       @relation("DepartmentHierarchy")
+  manager           User?              @relation(fields: [managerId], references: [id])
+  costCenter        CostCenter?        @relation(fields: [costCenterId], references: [id])
+  roles             Role[]
+  employees         Employee[]
+  headcountPlans    HeadcountPlan[]
+  budgetAllocations BudgetAllocation[]
+  hiringProposals   HiringProposal[]
+}
+
+model Role {
+  id           String   @id @default(cuid())
+  name         String
+  code         String   @unique
+  departmentId String
+  payGradeId   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  department      Department       @relation(fields: [departmentId], references: [id])
+  payGrade        PayGrade?        @relation(fields: [payGradeId], references: [id])
+  employees       Employee[]
+  hiringProposals HiringProposal[]
+}
+
+// ============================================
+// PAY STRUCTURE
+// ============================================
+
+model PayGrade {
+  id        String   @id @default(cuid())
+  name      String   // "Grade 1", "L5", "Senior Band"
+  level     Int      @unique
+  minSalary Float
+  midSalary Float
+  maxSalary Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  roles     Role[]
+  employees Employee[]
+}
+
+// ============================================
+// EMPLOYEES
+// ============================================
+
+model Employee {
+  id            String    @id @default(cuid())
+  employeeId    String    @unique
+  name          String
+  email         String    @unique
+  title         String
+  departmentId  String
+  roleId        String?
+  payGradeId    String?
+  currentSalary Float
+  hireDate      DateTime
+  status        String    @default("ACTIVE") // ACTIVE, TERMINATED, ON_LEAVE
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  department          Department           @relation(fields: [departmentId], references: [id])
+  role                Role?                @relation(fields: [roleId], references: [id])
+  payGrade            PayGrade?            @relation(fields: [payGradeId], references: [id])
+  compensationActions CompensationAction[]
+}
+
+// ============================================
+// BUDGET MANAGEMENT
+// ============================================
+
+model BudgetAllocation {
+  id             String   @id @default(cuid())
+  cycleId        String
+  costCenterId   String?
+  departmentId   String?
+  totalBudget    Float    // Total approved budget
+  salaryBudget   Float    // Budget for salaries
+  benefitsBudget Float    @default(0) // Budget for benefits
+  hiringBudget   Float    @default(0) // Budget for new hires
+  status         String   @default("DRAFT") // DRAFT, PENDING, APPROVED, REJECTED
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  cycle      PlanningCycle @relation(fields: [cycleId], references: [id])
+  costCenter CostCenter?   @relation(fields: [costCenterId], references: [id])
+  department Department?   @relation(fields: [departmentId], references: [id])
+  approvals  Approval[]
+
+  @@unique([cycleId, departmentId])
+}
+
+// ============================================
+// HEADCOUNT PLANNING
+// ============================================
+
+model HeadcountPlan {
+  id               String   @id @default(cuid())
+  cycleId          String
+  departmentId     String
+  plannedHeadcount Int      // Target headcount
+  approvedHires    Int      @default(0) // Approved new hires
+  actualHeadcount  Int      @default(0) // Current actual
+  wageBudget       Float    // Total wage cost budget
+  actualWageCost   Float    @default(0) // Actual spent
+  status           String   @default("DRAFT") // DRAFT, SUBMITTED, APPROVED, REJECTED
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  cycle      PlanningCycle @relation(fields: [cycleId], references: [id])
+  department Department    @relation(fields: [departmentId], references: [id])
+  approvals  Approval[]
+
+  @@unique([cycleId, departmentId])
+}
+
+// ============================================
+// HIRING PROPOSALS
+// ============================================
+
+model HiringProposal {
+  id             String   @id @default(cuid())
+  cycleId        String
+  departmentId   String
+  roleId         String?
+  proposedBy     String
+  positionTitle  String
+  quantity       Int      @default(1)
+  justification  String
+  proposedSalary Float
+  startMonth     Int      // 1-12
+  status         String   @default("DRAFT") // DRAFT, SUBMITTED, HR_REVIEW, FINANCE_REVIEW, APPROVED, REJECTED
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  cycle      PlanningCycle @relation(fields: [cycleId], references: [id])
+  department Department    @relation(fields: [departmentId], references: [id])
+  role       Role?         @relation(fields: [roleId], references: [id])
+  proposer   User          @relation(fields: [proposedBy], references: [id])
+  approvals  Approval[]
+}
+
+// ============================================
+// COMPENSATION CYCLES
+// ============================================
+
+model CompensationCycle {
+  id           String   @id @default(cuid())
+  cycleId      String
+  name         String   // "Annual Review 2025", "Q1 Bonus"
+  type         String   // SALARY_REVISION, BONUS, PROMOTION
+  budgetAmount Float
+  status       String   @default("DRAFT") // DRAFT, OPEN, IN_REVIEW, APPROVED, COMPLETED
+  effectiveDate DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  planningCycle PlanningCycle        @relation(fields: [cycleId], references: [id])
+  actions       CompensationAction[]
+}
+
+model CompensationAction {
+  id                  String   @id @default(cuid())
+  compensationCycleId String
+  employeeId          String
+  proposedBy          String
+  actionType          String   // MERIT_INCREASE, PROMOTION, BONUS, ADJUSTMENT
+  currentSalary       Float
+  proposedSalary      Float?
+  proposedBonus       Float?
+  percentageChange    Float?
+  justification       String?
+  status              String   @default("DRAFT") // DRAFT, SUBMITTED, APPROVED, REJECTED
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  compensationCycle CompensationCycle @relation(fields: [compensationCycleId], references: [id])
+  employee          Employee          @relation(fields: [employeeId], references: [id])
+  proposer          User              @relation(fields: [proposedBy], references: [id])
+  approvals         Approval[]
+}
+
+// ============================================
+// EXPENSE TRACKING (OPEX)
+// ============================================
+
+model Expense {
+  id           String   @id @default(cuid())
+  cycleId      String
+  costCenterId String
+  category     String   // SALARY, BENEFITS, TRAINING, EQUIPMENT, RECRUITMENT, OTHER
+  description  String
+  amount       Float
+  month        Int      // 1-12
+  isActual     Boolean  @default(true) // true = actual spend, false = forecast
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  cycle      PlanningCycle @relation(fields: [cycleId], references: [id])
+  costCenter CostCenter    @relation(fields: [costCenterId], references: [id])
+}
+
+// ============================================
+// APPROVAL WORKFLOW
+// ============================================
+
+model Approval {
+  id                   String   @id @default(cuid())
+  approverId           String
+  status               String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  comments             String?
+  // Polymorphic references - only one will be set
+  budgetAllocationId   String?
+  headcountPlanId      String?
+  hiringProposalId     String?
+  compensationActionId String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  approver           User                @relation(fields: [approverId], references: [id])
+  budgetAllocation   BudgetAllocation?   @relation(fields: [budgetAllocationId], references: [id])
+  headcountPlan      HeadcountPlan?      @relation(fields: [headcountPlanId], references: [id])
+  hiringProposal     HiringProposal?     @relation(fields: [hiringProposalId], references: [id])
+  compensationAction CompensationAction? @relation(fields: [compensationActionId], references: [id])
+}
