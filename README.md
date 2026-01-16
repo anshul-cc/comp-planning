@@ -140,19 +140,6 @@ Available roles: `ADMIN`, `HR`, `FINANCE`, `MANAGER`, `USER`
 └── types/                  # TypeScript type definitions
 ```
 
-## Available Scripts
-
-| Command            | Description                    |
-|-------------------|--------------------------------|
-| `npm run dev`     | Start development server       |
-| `npm run build`   | Create production build        |
-| `npm run start`   | Start production server        |
-| `npm run lint`    | Run ESLint                     |
-| `npm run db:migrate` | Run database migrations     |
-| `npm run db:push` | Push schema to database        |
-| `npm run db:seed` | Seed database with sample data |
-| `npm run db:studio` | Open Prisma Studio           |
-
 ## Database Schema
 
 Key entities and their relationships:
@@ -167,7 +154,3 @@ Key entities and their relationships:
 - **CompensationAction** - Salary changes, bonuses, and promotions
 - **Expense** - OPEX expense records by category and month
 - **Approval** - Polymorphic approval records for workflows
-
-## License
-
-MIT
