@@ -46,7 +46,7 @@ export default async function PayGradesPage() {
               <div className="p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+                    <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
                       <span className="text-xl font-bold text-white">L{grade.level}</span>
                     </div>
                     <div>
@@ -55,7 +55,7 @@ export default async function PayGradesPage() {
                     </div>
                   </div>
                   <div className="flex gap-3">
-                    <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium">
+                    <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
                       {grade._count.roles} roles
                     </span>
                     <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
@@ -73,10 +73,10 @@ export default async function PayGradesPage() {
                   </div>
                   <div className="relative h-8 bg-slate-100 rounded-lg overflow-hidden">
                     {/* Range Background */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-200 via-indigo-300 to-indigo-200" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-200 via-emerald-300 to-emerald-200" />
                     {/* Mid Point Marker */}
                     <div
-                      className="absolute top-0 bottom-0 w-0.5 bg-indigo-600"
+                      className="absolute top-0 bottom-0 w-0.5 bg-emerald-600"
                       style={{ left: '50%' }}
                     />
                     {/* Employee Dots */}
@@ -88,7 +88,7 @@ export default async function PayGradesPage() {
                         <div
                           key={idx}
                           className={`absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full border-2 border-white shadow ${
-                            isOutOfRange ? 'bg-rose-500' : 'bg-indigo-600'
+                            isOutOfRange ? 'bg-rose-500' : 'bg-emerald-600'
                           }`}
                           style={{ left: `${clampedPosition}%` }}
                           title={formatCurrency(emp.currentSalary)}
@@ -129,7 +129,7 @@ export default async function PayGradesPage() {
               <div className="px-6 py-4 bg-slate-50 flex gap-4">
                 <Link
                   href={`/pay-grades/${grade.id}`}
-                  className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                  className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
                 >
                   Edit Grade
                 </Link>

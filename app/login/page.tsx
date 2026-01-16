@@ -39,7 +39,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-800 p-12 flex-col justify-between relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-800 p-12 flex-col justify-between relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.05%22%3E%3Cpath%20d%3D%22M36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E')] opacity-30" />
 
         <div className="relative">
@@ -56,29 +56,29 @@ export default function LoginPage() {
         <div className="relative space-y-6">
           <h1 className="text-4xl font-bold text-white leading-tight">
             Streamline your<br />
-            <span className="text-indigo-200">compensation planning</span>
+            <span className="text-emerald-200">compensation planning</span>
           </h1>
-          <p className="text-lg text-indigo-100/80 max-w-md">
+          <p className="text-lg text-emerald-100/80 max-w-md">
             Manage budgets, allocations, and approvals all in one place. Make data-driven decisions with powerful analytics.
           </p>
 
           <div className="flex gap-8 pt-6">
             <div>
               <div className="text-3xl font-bold text-white">$2.5M+</div>
-              <div className="text-sm text-indigo-200">Budget Managed</div>
+              <div className="text-sm text-emerald-200">Budget Managed</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-white">500+</div>
-              <div className="text-sm text-indigo-200">Employees</div>
+              <div className="text-sm text-emerald-200">Employees</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-white">98%</div>
-              <div className="text-sm text-indigo-200">Accuracy</div>
+              <div className="text-sm text-emerald-200">Accuracy</div>
             </div>
           </div>
         </div>
 
-        <div className="relative text-sm text-indigo-200">
+        <div className="relative text-sm text-emerald-200">
           © 2025 CompPilot. All rights reserved.
         </div>
       </div>
@@ -88,7 +88,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <div className="lg:hidden flex items-center justify-center gap-3 mb-6">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 shadow-lg">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 shadow-lg">
                 <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -167,8 +167,8 @@ export default function LoginPage() {
             </form>
           </div>
 
-          <div className="mt-6 p-4 bg-indigo-50 rounded-xl">
-            <p className="text-sm text-indigo-700 text-center">
+          <div className="mt-6 p-4 bg-emerald-50 rounded-xl">
+            <p className="text-sm text-emerald-700 text-center">
               <span className="font-medium">Demo credentials:</span><br />
               admin@example.com / password123
             </p>

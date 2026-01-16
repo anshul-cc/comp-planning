@@ -87,7 +87,7 @@ export default async function ExpensesPage() {
           title="Total Budget"
           value={formatCurrency(totalBudget)}
           subtitle="Allocated"
-          color="indigo"
+          color="emerald"
         />
         <SummaryCard
           title="Actual Spend"
@@ -138,7 +138,7 @@ export default async function ExpensesPage() {
               <div key={month} className="flex-1 flex flex-col items-center justify-end">
                 <div
                   className={`w-full rounded-t transition-all duration-300 ${
-                    monthTotal > 0 ? 'bg-gradient-to-t from-indigo-500 to-purple-500' : 'bg-slate-100'
+                    monthTotal > 0 ? 'bg-gradient-to-t from-emerald-500 to-teal-500' : 'bg-slate-100'
                   }`}
                   style={{ height: `${Math.max(height, 4)}%` }}
                   title={formatCurrency(monthTotal)}
@@ -162,7 +162,7 @@ export default async function ExpensesPage() {
               <div className="p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+                    <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
                       <BuildingIcon className="h-6 w-6 text-white" />
                     </div>
                     <div>
@@ -254,10 +254,10 @@ function SummaryCard({
   title: string
   value: string
   subtitle: string
-  color: 'indigo' | 'emerald' | 'amber' | 'rose' | 'slate'
+  color: 'emerald' | 'emerald' | 'amber' | 'rose' | 'slate'
 }) {
   const bgColors = {
-    indigo: 'from-indigo-50 to-purple-50',
+    emerald: 'from-emerald-50 to-teal-50',
     emerald: 'from-emerald-50 to-teal-50',
     amber: 'from-amber-50 to-orange-50',
     rose: 'from-rose-50 to-pink-50',
@@ -275,11 +275,11 @@ function SummaryCard({
 
 function getCategoryColor(category: string) {
   const colors: Record<string, string> = {
-    SALARY: 'bg-indigo-100',
+    SALARY: 'bg-emerald-100',
     BENEFITS: 'bg-emerald-100',
     TRAINING: 'bg-amber-100',
     EQUIPMENT: 'bg-blue-100',
-    RECRUITMENT: 'bg-purple-100',
+    RECRUITMENT: 'bg-teal-100',
     OTHER: 'bg-slate-100',
   }
   return colors[category] || colors.OTHER
@@ -287,11 +287,11 @@ function getCategoryColor(category: string) {
 
 function getCategoryBadge(category: string) {
   const colors: Record<string, string> = {
-    SALARY: 'bg-indigo-100 text-indigo-700',
+    SALARY: 'bg-emerald-100 text-emerald-700',
     BENEFITS: 'bg-emerald-100 text-emerald-700',
     TRAINING: 'bg-amber-100 text-amber-700',
     EQUIPMENT: 'bg-blue-100 text-blue-700',
-    RECRUITMENT: 'bg-purple-100 text-purple-700',
+    RECRUITMENT: 'bg-teal-100 text-teal-700',
     OTHER: 'bg-slate-100 text-slate-700',
   }
   return colors[category] || colors.OTHER

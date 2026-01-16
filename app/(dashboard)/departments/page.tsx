@@ -108,7 +108,7 @@ export default function DepartmentsPage() {
           style={{ marginLeft: level * 24 }}
         >
           <div className="flex items-center gap-4 flex-1">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white font-semibold text-sm">
               {dept.code.slice(0, 2)}
             </div>
             <div className="flex-1">
@@ -153,7 +153,7 @@ export default function DepartmentsPage() {
           <div className="flex gap-2 ml-4">
             <button
               onClick={() => handleEdit(dept)}
-              className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+              className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
             >
               Edit
             </button>
@@ -173,7 +173,7 @@ export default function DepartmentsPage() {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <div className="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full" />
+        <div className="animate-spin h-8 w-8 border-4 border-emerald-500 border-t-transparent rounded-full" />
       </div>
     )
   }
@@ -201,7 +201,7 @@ export default function DepartmentsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-        <div className="card p-6 bg-gradient-to-br from-indigo-50 to-purple-50">
+        <div className="card p-6 bg-gradient-to-br from-emerald-50 to-teal-50">
           <p className="text-sm font-medium text-slate-600">Total Departments</p>
           <p className="mt-2 text-3xl font-bold text-slate-900">{departments.length}</p>
         </div>

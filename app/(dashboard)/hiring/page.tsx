@@ -59,7 +59,7 @@ export default async function HiringPage() {
         <div className="grid grid-cols-6 gap-4">
           <PipelineStage label="Draft" count={statusCounts.DRAFT} color="slate" />
           <PipelineStage label="Submitted" count={statusCounts.SUBMITTED} color="blue" />
-          <PipelineStage label="HR Review" count={statusCounts.HR_REVIEW} color="purple" />
+          <PipelineStage label="HR Review" count={statusCounts.HR_REVIEW} color="teal" />
           <PipelineStage label="Finance Review" count={statusCounts.FINANCE_REVIEW} color="amber" />
           <PipelineStage label="Approved" count={statusCounts.APPROVED} color="emerald" />
           <PipelineStage label="Rejected" count={statusCounts.REJECTED} color="rose" />
@@ -130,7 +130,7 @@ export default async function HiringPage() {
             <div className="mt-4 flex gap-3">
               <Link
                 href={`/hiring/${proposal.id}`}
-                className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
               >
                 View Details
               </Link>
@@ -169,7 +169,7 @@ function PipelineStage({ label, count, color }: { label: string; count: number; 
   const colors: Record<string, string> = {
     slate: 'bg-slate-100 text-slate-700',
     blue: 'bg-blue-100 text-blue-700',
-    purple: 'bg-purple-100 text-purple-700',
+    teal: 'bg-teal-100 text-teal-700',
     amber: 'bg-amber-100 text-amber-700',
     emerald: 'bg-emerald-100 text-emerald-700',
     rose: 'bg-rose-100 text-rose-700',
@@ -187,7 +187,7 @@ function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     DRAFT: 'bg-slate-100 text-slate-700',
     SUBMITTED: 'bg-blue-100 text-blue-700',
-    HR_REVIEW: 'bg-purple-100 text-purple-700',
+    HR_REVIEW: 'bg-teal-100 text-teal-700',
     FINANCE_REVIEW: 'bg-amber-100 text-amber-700',
     APPROVED: 'bg-emerald-100 text-emerald-700',
     REJECTED: 'bg-rose-100 text-rose-700',
@@ -204,7 +204,7 @@ function getStatusIconBg(status: string) {
   const styles: Record<string, string> = {
     DRAFT: 'bg-slate-400',
     SUBMITTED: 'bg-blue-500',
-    HR_REVIEW: 'bg-purple-500',
+    HR_REVIEW: 'bg-teal-500',
     FINANCE_REVIEW: 'bg-amber-500',
     APPROVED: 'bg-emerald-500',
     REJECTED: 'bg-rose-500',

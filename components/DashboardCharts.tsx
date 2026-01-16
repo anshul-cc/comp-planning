@@ -49,7 +49,7 @@ export function DashboardCharts({
         </h3>
         <div className="flex items-center gap-4 text-sm">
           <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500" />
+            <div className="h-3 w-3 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" />
             <span className="text-slate-600">Budget</span>
           </div>
           <div className="flex items-center gap-2">

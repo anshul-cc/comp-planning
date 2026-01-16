@@ -75,7 +75,7 @@ export default async function CompensationPage() {
                       className={`h-3 rounded-full transition-all duration-500 ${
                         totalProposed > totalBudget
                           ? 'bg-gradient-to-r from-rose-500 to-pink-500'
-                          : 'bg-gradient-to-r from-indigo-500 to-purple-500'
+                          : 'bg-gradient-to-r from-emerald-500 to-teal-500'
                       }`}
                       style={{ width: `${Math.min((totalProposed / totalBudget) * 100, 100)}%` }}
                     />
@@ -110,7 +110,7 @@ export default async function CompensationPage() {
                       {cycle.actions.slice(0, 3).map((action) => (
                         <div key={action.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                           <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-medium">
+                            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white text-xs font-medium">
                               {action.employee.name.split(' ').map((n) => n[0]).join('')}
                             </div>
                             <div>
@@ -143,7 +143,7 @@ export default async function CompensationPage() {
               <div className="px-6 py-4 bg-slate-50 flex gap-4">
                 <Link
                   href={`/compensation/${cycle.id}`}
-                  className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                  className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
                 >
                   View All Actions
                 </Link>
@@ -178,7 +178,7 @@ function getTypeIcon(type: string) {
   switch (type) {
     case 'SALARY_REVISION':
       return {
-        bg: 'bg-gradient-to-br from-indigo-500 to-purple-500',
+        bg: 'bg-gradient-to-br from-emerald-500 to-teal-500',
         icon: <TrendingUpIcon className="h-6 w-6 text-white" />,
       }
     case 'BONUS':
@@ -201,7 +201,7 @@ function getTypeIcon(type: string) {
 
 function TypeBadge({ type }: { type: string }) {
   const styles: Record<string, string> = {
-    SALARY_REVISION: 'bg-indigo-100 text-indigo-700',
+    SALARY_REVISION: 'bg-emerald-100 text-emerald-700',
     BONUS: 'bg-emerald-100 text-emerald-700',
     PROMOTION: 'bg-amber-100 text-amber-700',
   }

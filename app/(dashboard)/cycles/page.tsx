@@ -69,21 +69,21 @@ export default async function CyclesPage() {
             <div className="mt-6 flex gap-3">
               <Link
                 href={`/cycles/${cycle.id}`}
-                className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
               >
                 View Details
               </Link>
               <span className="text-slate-300">|</span>
               <Link
                 href={`/budgets?cycle=${cycle.id}`}
-                className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
               >
                 Budget Allocations
               </Link>
               <span className="text-slate-300">|</span>
               <Link
                 href={`/headcount?cycle=${cycle.id}`}
-                className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
               >
                 Headcount Plans
               </Link>

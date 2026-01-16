@@ -48,7 +48,7 @@ export default async function HeadcountPage() {
           title="Planned Headcount"
           value={totalPlanned.toString()}
           subtitle="Total positions"
-          color="indigo"
+          color="emerald"
         />
         <SummaryCard
           title="Actual Headcount"
@@ -145,7 +145,7 @@ export default async function HeadcountPage() {
                     <StatusBadge status={plan.status} />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <Link href={`/headcount/${plan.id}`} className="text-indigo-600 hover:text-indigo-900">
+                    <Link href={`/headcount/${plan.id}`} className="text-emerald-600 hover:text-emerald-900">
                       Edit
                     </Link>
                   </td>
@@ -176,10 +176,10 @@ function SummaryCard({
   title: string
   value: string
   subtitle: string
-  color: 'indigo' | 'emerald' | 'amber' | 'rose'
+  color: 'emerald' | 'emerald' | 'amber' | 'rose'
 }) {
   const bgColors = {
-    indigo: 'from-indigo-50 to-purple-50',
+    emerald: 'from-emerald-50 to-teal-50',
     emerald: 'from-emerald-50 to-teal-50',
     amber: 'from-amber-50 to-orange-50',
     rose: 'from-rose-50 to-pink-50',

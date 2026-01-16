@@ -98,7 +98,7 @@ export default async function DashboardPage() {
           value={formatCurrency(data.totalBudget)}
           subtitle={`${formatCurrency(data.totalActualSpend)} spent`}
           progress={budgetUtilization}
-          color="indigo"
+          color="teal"
         />
         <MetricCard
           title="Wage Budget"
@@ -137,7 +137,7 @@ export default async function DashboardPage() {
           <div className="mt-6 pt-6 border-t border-slate-100">
             <h4 className="text-sm font-medium text-slate-700 mb-3">Budget vs Actual</h4>
             <div className="space-y-3">
-              <ProgressBar label="Budget Spend" value={budgetUtilization} color="indigo" />
+              <ProgressBar label="Budget Spend" value={budgetUtilization} color="teal" />
               <ProgressBar label="Headcount" value={headcountFill} color="emerald" />
             </div>
           </div>
@@ -163,17 +163,17 @@ function MetricCard({
   value: string
   subtitle: string
   progress?: number
-  color: 'indigo' | 'emerald' | 'amber' | 'rose'
+  color: 'teal' | 'emerald' | 'amber' | 'rose'
 }) {
   const colorClasses = {
-    indigo: 'from-indigo-50 to-purple-50 text-indigo-600',
+    teal: 'from-teal-50 to-emerald-50 text-teal-600',
     emerald: 'from-emerald-50 to-teal-50 text-emerald-600',
     amber: 'from-amber-50 to-orange-50 text-amber-600',
     rose: 'from-rose-50 to-pink-50 text-rose-600',
   }
 
   const progressColors = {
-    indigo: 'from-indigo-500 to-purple-500',
+    teal: 'from-teal-500 to-emerald-500',
     emerald: 'from-emerald-500 to-teal-500',
     amber: 'from-amber-500 to-orange-500',
     rose: 'from-rose-500 to-pink-500',
@@ -214,10 +214,10 @@ function ProgressBar({
 }: {
   label: string
   value: number
-  color: 'indigo' | 'emerald'
+  color: 'teal' | 'emerald'
 }) {
   const progressColors = {
-    indigo: 'from-indigo-500 to-purple-500',
+    teal: 'from-teal-500 to-emerald-500',
     emerald: 'from-emerald-500 to-teal-500',
   }
 

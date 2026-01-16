@@ -4,8 +4,8 @@
 
 @layer base {
   :root {
-    --gradient-start: #6366f1;
-    --gradient-end: #8b5cf6;
+    --gradient-start: #10b981;
+    --gradient-end: #059669;
   }
 
   body {
@@ -18,7 +18,7 @@
     @apply inline-flex items-center justify-center rounded-xl text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 shadow-sm hover:shadow-md active:scale-[0.98];
   }
   .btn-primary {
-    @apply btn bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600 focus-visible:ring-indigo-500 px-5 py-2.5;
+    @apply btn bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600 focus-visible:ring-emerald-500 px-5 py-2.5;
   }
   .btn-secondary {
     @apply btn bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 focus-visible:ring-slate-500 px-5 py-2.5;
@@ -27,7 +27,7 @@
     @apply btn bg-gradient-to-r from-red-500 to-rose-500 text-white hover:from-red-600 hover:to-rose-600 focus-visible:ring-red-500 px-5 py-2.5;
   }
   .input {
-    @apply flex h-11 w-full rounded-xl border-0 bg-white px-4 py-2.5 text-sm ring-1 ring-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow duration-200;
+    @apply flex h-11 w-full rounded-xl border-0 bg-white px-4 py-2.5 text-sm ring-1 ring-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-shadow duration-200;
   }
   .card {
     @apply rounded-2xl border-0 bg-white shadow-sm ring-1 ring-slate-100 overflow-hidden;

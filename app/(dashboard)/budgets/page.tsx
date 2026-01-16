@@ -53,7 +53,7 @@ export default async function BudgetsPage() {
           title="Total Budget"
           value={formatCurrency(totalBudget)}
           subtitle="All departments"
-          color="indigo"
+          color="emerald"
         />
         <SummaryCard
           title="Salary Budget"
@@ -82,7 +82,7 @@ export default async function BudgetsPage() {
           {totalBudget > 0 && (
             <>
               <div
-                className="bg-gradient-to-r from-indigo-500 to-indigo-600 flex items-center justify-center text-white text-xs font-medium"
+                className="bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center justify-center text-white text-xs font-medium"
                 style={{ width: `${(totalSalary / totalBudget) * 100}%` }}
               >
                 {((totalSalary / totalBudget) * 100).toFixed(0)}%
@@ -103,7 +103,7 @@ export default async function BudgetsPage() {
           )}
         </div>
         <div className="mt-3 flex gap-6">
-          <Legend color="indigo" label="Salary" />
+          <Legend color="emerald" label="Salary" />
           <Legend color="emerald" label="Benefits" />
           <Legend color="amber" label="Hiring" />
         </div>
@@ -145,7 +145,7 @@ export default async function BudgetsPage() {
               <tr key={allocation.id} className="hover:bg-slate-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white font-semibold text-sm">
                       {allocation.department?.code?.slice(0, 2) || '??'}
                     </div>
                     <div>
@@ -177,7 +177,7 @@ export default async function BudgetsPage() {
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <Link
                     href={`/budgets/${allocation.id}`}
-                    className="text-indigo-600 hover:text-indigo-900"
+                    className="text-emerald-600 hover:text-emerald-900"
                   >
                     Edit
                   </Link>
@@ -213,10 +213,10 @@ function SummaryCard({
   title: string
   value: string
   subtitle: string
-  color: 'indigo' | 'emerald' | 'amber' | 'rose'
+  color: 'emerald' | 'emerald' | 'amber' | 'rose'
 }) {
   const bgColors = {
-    indigo: 'from-indigo-50 to-purple-50',
+    emerald: 'from-emerald-50 to-teal-50',
     emerald: 'from-emerald-50 to-teal-50',
     amber: 'from-amber-50 to-orange-50',
     rose: 'from-rose-50 to-pink-50',
@@ -233,7 +233,7 @@ function SummaryCard({
 
 function Legend({ color, label }: { color: string; label: string }) {
   const bgColors: Record<string, string> = {
-    indigo: 'bg-indigo-500',
+    emerald: 'bg-emerald-500',
     emerald: 'bg-emerald-500',
     amber: 'bg-amber-500',
   }

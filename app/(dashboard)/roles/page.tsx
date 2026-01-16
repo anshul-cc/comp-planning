@@ -55,7 +55,7 @@ export default async function RolesPage() {
                       <h3 className="font-semibold text-slate-900">{role.name}</h3>
                       <p className="text-sm text-slate-500">{role.code}</p>
                     </div>
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-indigo-100 text-indigo-700">
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700">
                       {role._count.employees} employees
                     </span>
                   </div>
@@ -83,7 +83,7 @@ export default async function RolesPage() {
                   <div className="mt-4 flex gap-3">
                     <Link
                       href={`/roles/${role.id}`}
-                      className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                      className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
                     >
                       Edit
                     </Link>
@@ -119,7 +119,7 @@ function SalaryRow({ label, value, highlight }: { label: string; value: number; 
   return (
     <div className="flex justify-between text-xs">
       <span className="text-slate-500">{label}</span>
-      <span className={highlight ? 'font-semibold text-indigo-600' : 'text-slate-700'}>
+      <span className={highlight ? 'font-semibold text-emerald-600' : 'text-slate-700'}>
         {formatCurrency(value)}
       </span>
     </div>
