@@ -11,9 +11,7 @@ export async function GET() {
 
   const departments = await prisma.department.findMany({
     include: {
-      parent: true,
-      children: true,
-      manager: {
+      head: {
         select: { id: true, name: true, email: true },
       },
       costCenter: true,
@@ -34,7 +32,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { name, code, parentId, managerId, costCenterId, location } = body
+  const { name, code, headId, costCenterId, location } = body
 
   if (!name || !code) {
     return NextResponse.json(
@@ -58,14 +56,12 @@ export async function POST(request: NextRequest) {
     data: {
       name,
       code,
-      parentId: parentId || null,
-      managerId: managerId || null,
+      headId: headId || null,
       costCenterId: costCenterId || null,
       location: location || null,
     },
     include: {
-      parent: true,
-      manager: {
+      head: {
         select: { id: true, name: true, email: true },
       },
       costCenter: true,
