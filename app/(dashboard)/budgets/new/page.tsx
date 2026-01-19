@@ -36,13 +36,14 @@ export default function NewBudgetPage() {
 
   useEffect(() => {
     // Fetch cycles and departments
+    const fetchOptions = { credentials: 'include' as RequestCredentials }
     Promise.all([
-      fetch('/api/cycles').then(res => {
-        if (!res.ok) throw new Error('Failed to fetch cycles')
+      fetch('/api/cycles', fetchOptions).then(res => {
+        if (!res.ok) throw new Error(`Failed to fetch cycles: ${res.status}`)
         return res.json()
       }),
-      fetch('/api/departments').then(res => {
-        if (!res.ok) throw new Error('Failed to fetch departments')
+      fetch('/api/departments', fetchOptions).then(res => {
+        if (!res.ok) throw new Error(`Failed to fetch departments: ${res.status}`)
         return res.json()
       }),
     ]).then(([cyclesData, departmentsData]) => {
