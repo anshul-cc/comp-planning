@@ -4,13 +4,20 @@ import bcrypt from 'bcryptjs'
 import { SYSTEM_ROLES } from '@/lib/permissions'
 
 export async function GET() {
+  const logs: string[] = []
+  const log = (msg: string) => {
+    console.log(msg)
+    logs.push(msg)
+  }
+
   try {
     const hashedPassword = await bcrypt.hash('password123', 10)
+    log('Password hashed successfully')
 
     // ============================================
     // SYSTEM ROLES & PERMISSIONS
     // ============================================
-    console.log('Creating system roles and permissions...')
+    log('Creating system roles and permissions...')
 
     const createdSystemRoles: Record<string, string> = {}
 
@@ -128,8 +135,11 @@ export async function GET() {
       },
     })
 
+    log('All users created/updated successfully')
+
     return NextResponse.json({
       message: 'Database seeded successfully!',
+      logs,
       systemRoles: Object.keys(createdSystemRoles),
       credentials: {
         superAdmin: 'superadmin@example.com / password123',
@@ -140,6 +150,11 @@ export async function GET() {
     })
   } catch (error) {
     console.error('Seed error:', error)
-    return NextResponse.json({ error: 'Failed to seed database', details: String(error) }, { status: 500 })
+    return NextResponse.json({
+      error: 'Failed to seed database',
+      details: String(error),
+      logs,
+      hint: 'You may need to run: prisma db push to update the database schema'
+    }, { status: 500 })
   }
 }
