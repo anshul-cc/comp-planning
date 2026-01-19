@@ -1,29 +1,31 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession(authOptions)
+  const session = await getServerSession(authOptions);
   if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const searchParams = request.nextUrl.searchParams
-  const annualPlanId = searchParams.get('annualPlanId')
+  const searchParams = request.nextUrl.searchParams;
+  const cycleId = searchParams.get('cycleId');
+  const departmentId = searchParams.get('departmentId');
+  const status = searchParams.get('status');
 
-  const where = annualPlanId ? { annualPlanId } : {}
+  const where: Record<string, unknown> = {};
+  if (cycleId) where.cycleId = cycleId;
+  if (departmentId) where.departmentId = departmentId;
+  if (status) where.status = status;
 
   const allocations = await prisma.budgetAllocation.findMany({
     where,
     include: {
-      employee: true,
-      annualPlan: {
-        include: {
-          fiscalYear: true,
-          department: true,
-        },
-      },
+      cycle: true,
+      department: true,
+      costCenter: true,
+      businessUnit: true,
       approvals: {
         include: {
           approver: {
@@ -31,91 +33,98 @@ export async function GET(request: NextRequest) {
           },
         },
       },
+      comments: true,
     },
     orderBy: { createdAt: 'desc' },
-  })
+  });
 
-  return NextResponse.json(allocations)
+  return NextResponse.json(allocations);
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions)
+  const session = await getServerSession(authOptions);
   if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const body = await request.json()
-  const { annualPlanId, employeeId, amount, type, notes } = body
+  const body = await request.json();
+  const {
+    cycleId,
+    departmentId,
+    costCenterId,
+    businessUnitId,
+    salaryFixed = 0,
+    salaryVariable = 0,
+    benefitsEmployee = 0,
+    benefitsEmployer = 0,
+    newHiringBudget = 0,
+    totalBudget,
+    notes,
+  } = body;
 
-  if (!annualPlanId || !employeeId || amount === undefined || !type) {
+  if (!cycleId) {
     return NextResponse.json(
-      { error: 'Annual plan, employee, amount, and type are required' },
+      { error: 'Cycle ID is required' },
       { status: 400 }
-    )
+    );
   }
 
-  // Check if allocation already exists
-  const existing = await prisma.budgetAllocation.findUnique({
-    where: {
-      annualPlanId_employeeId_type: {
-        annualPlanId,
-        employeeId,
-        type,
-      },
-    },
-  })
-
-  if (existing) {
+  // Must have at least one org unit
+  if (!departmentId && !costCenterId && !businessUnitId) {
     return NextResponse.json(
-      { error: 'An allocation of this type already exists for this employee' },
+      { error: 'Department, Cost Center, or Business Unit is required' },
       { status: 400 }
-    )
+    );
   }
 
-  // Validate against annual plan budget
-  const annualPlan = await prisma.annualPlan.findUnique({
-    where: { id: annualPlanId },
-    include: { allocations: true },
-  })
+  // Verify cycle exists
+  const cycle = await prisma.planningCycle.findUnique({
+    where: { id: cycleId },
+  });
 
-  if (!annualPlan) {
-    return NextResponse.json(
-      { error: 'Annual plan not found' },
-      { status: 404 }
-    )
+  if (!cycle) {
+    return NextResponse.json({ error: 'Cycle not found' }, { status: 404 });
   }
 
-  const currentTotal = annualPlan.allocations.reduce((sum, a) => sum + a.amount, 0)
-  const newTotal = currentTotal + parseFloat(amount)
+  // Calculate total if not provided
+  const calculatedTotal = totalBudget ?? (
+    parseFloat(String(salaryFixed)) +
+    parseFloat(String(salaryVariable)) +
+    parseFloat(String(benefitsEmployee)) +
+    parseFloat(String(benefitsEmployer)) +
+    parseFloat(String(newHiringBudget))
+  );
 
-  if (newTotal > annualPlan.totalBudget) {
-    return NextResponse.json(
-      {
-        error: `Allocation exceeds budget. Available: $${(annualPlan.totalBudget - currentTotal).toLocaleString()}`,
-      },
-      { status: 400 }
-    )
-  }
+  // For backward compatibility, also set the legacy fields
+  const salaryBudget = parseFloat(String(salaryFixed)) + parseFloat(String(salaryVariable));
+  const benefitsBudget = parseFloat(String(benefitsEmployee)) + parseFloat(String(benefitsEmployer));
+  const hiringBudget = parseFloat(String(newHiringBudget));
 
   const allocation = await prisma.budgetAllocation.create({
     data: {
-      annualPlanId,
-      employeeId,
-      amount: parseFloat(amount),
-      type,
+      cycleId,
+      departmentId: departmentId || null,
+      costCenterId: costCenterId || null,
+      businessUnitId: businessUnitId || null,
+      salaryFixed: parseFloat(String(salaryFixed)),
+      salaryVariable: parseFloat(String(salaryVariable)),
+      benefitsEmployee: parseFloat(String(benefitsEmployee)),
+      benefitsEmployer: parseFloat(String(benefitsEmployer)),
+      newHiringBudget: parseFloat(String(newHiringBudget)),
+      totalBudget: calculatedTotal,
+      salaryBudget,
+      benefitsBudget,
+      hiringBudget,
       notes,
       status: 'DRAFT',
     },
     include: {
-      employee: true,
-      annualPlan: {
-        include: {
-          fiscalYear: true,
-          department: true,
-        },
-      },
+      cycle: true,
+      department: true,
+      costCenter: true,
+      businessUnit: true,
     },
-  })
+  });
 
-  return NextResponse.json(allocation, { status: 201 })
+  return NextResponse.json(allocation, { status: 201 });
 }
