@@ -37,11 +37,20 @@ export default function NewBudgetPage() {
   useEffect(() => {
     // Fetch cycles and departments
     Promise.all([
-      fetch('/api/cycles').then(res => res.json()),
-      fetch('/api/departments').then(res => res.json()),
+      fetch('/api/cycles').then(res => {
+        if (!res.ok) throw new Error('Failed to fetch cycles')
+        return res.json()
+      }),
+      fetch('/api/departments').then(res => {
+        if (!res.ok) throw new Error('Failed to fetch departments')
+        return res.json()
+      }),
     ]).then(([cyclesData, departmentsData]) => {
-      setCycles(cyclesData)
-      setDepartments(departmentsData)
+      setCycles(Array.isArray(cyclesData) ? cyclesData : [])
+      setDepartments(Array.isArray(departmentsData) ? departmentsData : [])
+    }).catch(err => {
+      console.error('Error fetching data:', err)
+      setError('Failed to load form data. Please refresh the page.')
     })
   }, [])
 
