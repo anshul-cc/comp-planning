@@ -22,9 +22,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Only allow ADMIN and COMPENSATION_MANAGER roles to view audit logs
+  // Allow users with appropriate roles to view audit logs
   const userRole = (session.user as { role?: string })?.role;
-  if (!['ADMIN', 'COMPENSATION_MANAGER'].includes(userRole || '')) {
+  const allowedRoles = ['ADMIN', 'SUPER_ADMIN', 'COMPENSATION_MANAGER', 'HR_ADMIN', 'FINANCE_HEAD'];
+  if (!allowedRoles.includes(userRole || '')) {
     return NextResponse.json(
       { error: 'Insufficient permissions to view audit logs' },
       { status: 403 }
