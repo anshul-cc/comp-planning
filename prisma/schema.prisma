@@ -12,13 +12,17 @@ datasource db {
 // ============================================
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String
-  role      String   @default("USER") // COMPENSATION_MANAGER, HR_ADMIN, BU_LEADER, DEPARTMENT_HEAD, USER
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  email        String   @unique
+  password     String
+  name         String
+  role         String   @default("USER") // COMPENSATION_MANAGER, HR_ADMIN, BU_LEADER, DEPARTMENT_HEAD, USER
+  systemRoleId String?  // Link to SystemRole for permissions
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // System role for permissions
+  systemRole           SystemRole?    @relation(fields: [systemRoleId], references: [id])
 
   // Management relationships
   managedBusinessUnits BusinessUnit[] @relation("BULeader")
@@ -29,6 +33,36 @@ model User {
   hiringProposals      HiringProposal[]
   compensationActions  CompensationAction[]
   createdCycles        PlanningCycle[]      @relation("CycleCreator")
+}
+
+// ============================================
+// SYSTEM ROLES & PERMISSIONS
+// ============================================
+
+model SystemRole {
+  id           String   @id @default(cuid())
+  name         String   @unique // "Compensation Manager", "HR Admin", etc.
+  code         String   @unique // "COMPENSATION_MANAGER", "HR_ADMIN", etc.
+  description  String?
+  isSystemRole Boolean  @default(true) // true = cannot be deleted
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  permissions RolePermission[]
+  users       User[]
+}
+
+model RolePermission {
+  id           String   @id @default(cuid())
+  systemRoleId String
+  resource     String   // budget_allocation, headcount_plan, pay_grade, compensation_cycle, etc.
+  actions      String   // JSON array: ["view", "create", "edit", "delete", "approve"]
+  scope        String   // own, department, cost_center, bu, all
+  createdAt    DateTime @default(now())
+
+  systemRole SystemRole @relation(fields: [systemRoleId], references: [id], onDelete: Cascade)
+
+  @@unique([systemRoleId, resource])
 }
 
 // ============================================

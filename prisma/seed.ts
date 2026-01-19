@@ -1,54 +1,444 @@
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import { SYSTEM_ROLES } from '../lib/permissions'
 
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('Seeding database...')
+  console.log('🌱 Seeding database...\n')
 
-  // ============================================
-  // USERS
-  // ============================================
   const hashedPassword = await bcrypt.hash('password123', 10)
 
-  const admin = await prisma.user.upsert({
+  // ============================================
+  // SYSTEM ROLES & PERMISSIONS
+  // ============================================
+  console.log('Creating system roles and permissions...')
+
+  const createdSystemRoles: Record<string, string> = {}
+
+  for (const roleDef of SYSTEM_ROLES) {
+    const systemRole = await prisma.systemRole.upsert({
+      where: { code: roleDef.code },
+      update: {
+        name: roleDef.name,
+        description: roleDef.description,
+        isSystemRole: roleDef.isSystemRole,
+      },
+      create: {
+        code: roleDef.code,
+        name: roleDef.name,
+        description: roleDef.description,
+        isSystemRole: roleDef.isSystemRole,
+      },
+    })
+
+    createdSystemRoles[roleDef.code] = systemRole.id
+
+    // Create permissions for this role
+    for (const perm of roleDef.permissions) {
+      await prisma.rolePermission.upsert({
+        where: {
+          systemRoleId_resource: {
+            systemRoleId: systemRole.id,
+            resource: perm.resource,
+          },
+        },
+        update: {
+          actions: JSON.stringify(perm.actions),
+          scope: perm.scope,
+        },
+        create: {
+          systemRoleId: systemRole.id,
+          resource: perm.resource,
+          actions: JSON.stringify(perm.actions),
+          scope: perm.scope,
+        },
+      })
+    }
+  }
+
+  console.log('✓ System roles created:', Object.keys(createdSystemRoles).join(', '))
+
+  // ============================================
+  // USERS - Different Personas
+  // ============================================
+  console.log('Creating users...')
+
+  // Compensation Manager (Admin)
+  const compManager = await prisma.user.upsert({
     where: { email: 'admin@example.com' },
-    update: {},
+    update: {
+      role: 'COMPENSATION_MANAGER',
+      name: 'Admin User',
+      systemRoleId: createdSystemRoles['COMPENSATION_MANAGER'],
+    },
     create: {
       email: 'admin@example.com',
       password: hashedPassword,
       name: 'Admin User',
-      role: 'ADMIN',
+      role: 'COMPENSATION_MANAGER',
+      systemRoleId: createdSystemRoles['COMPENSATION_MANAGER'],
     },
   })
 
-  const hrManager = await prisma.user.upsert({
+  // HR Admin
+  const hrAdmin = await prisma.user.upsert({
     where: { email: 'hr@example.com' },
-    update: {},
+    update: {
+      role: 'HR_ADMIN',
+      name: 'HR Admin',
+      systemRoleId: createdSystemRoles['HR_ADMIN'],
+    },
     create: {
       email: 'hr@example.com',
       password: hashedPassword,
-      name: 'HR Manager',
-      role: 'HR',
+      name: 'HR Admin',
+      role: 'HR_ADMIN',
+      systemRoleId: createdSystemRoles['HR_ADMIN'],
     },
   })
 
-  const financeManager = await prisma.user.upsert({
+  // Finance Head
+  const financeHead = await prisma.user.upsert({
     where: { email: 'finance@example.com' },
-    update: {},
+    update: {
+      role: 'FINANCE_HEAD',
+      name: 'Finance Head',
+      systemRoleId: createdSystemRoles['FINANCE_HEAD'],
+    },
     create: {
       email: 'finance@example.com',
       password: hashedPassword,
-      name: 'Finance Manager',
-      role: 'FINANCE',
+      name: 'Finance Head',
+      role: 'FINANCE_HEAD',
+      systemRoleId: createdSystemRoles['FINANCE_HEAD'],
+    },
+  })
+
+  // BU Leaders
+  const brad = await prisma.user.upsert({
+    where: { email: 'brad@example.com' },
+    update: { systemRoleId: createdSystemRoles['BU_LEADER'] },
+    create: {
+      email: 'brad@example.com',
+      password: hashedPassword,
+      name: 'Brad Wilson',
+      role: 'BU_LEADER',
+      systemRoleId: createdSystemRoles['BU_LEADER'],
+    },
+  })
+
+  const maggi = await prisma.user.upsert({
+    where: { email: 'maggi@example.com' },
+    update: { systemRoleId: createdSystemRoles['BU_LEADER'] },
+    create: {
+      email: 'maggi@example.com',
+      password: hashedPassword,
+      name: 'Maggi Chen',
+      role: 'BU_LEADER',
+      systemRoleId: createdSystemRoles['BU_LEADER'],
+    },
+  })
+
+  const ashley = await prisma.user.upsert({
+    where: { email: 'ashley@example.com' },
+    update: { systemRoleId: createdSystemRoles['BU_LEADER'] },
+    create: {
+      email: 'ashley@example.com',
+      password: hashedPassword,
+      name: 'Ashley Roberts',
+      role: 'BU_LEADER',
+      systemRoleId: createdSystemRoles['BU_LEADER'],
+    },
+  })
+
+  // Department Heads
+  const jack = await prisma.user.upsert({
+    where: { email: 'jack@example.com' },
+    update: { systemRoleId: createdSystemRoles['DEPARTMENT_HEAD'] },
+    create: {
+      email: 'jack@example.com',
+      password: hashedPassword,
+      name: 'Jack Thompson',
+      role: 'DEPARTMENT_HEAD',
+      systemRoleId: createdSystemRoles['DEPARTMENT_HEAD'],
+    },
+  })
+
+  const matt = await prisma.user.upsert({
+    where: { email: 'matt@example.com' },
+    update: { systemRoleId: createdSystemRoles['DEPARTMENT_HEAD'] },
+    create: {
+      email: 'matt@example.com',
+      password: hashedPassword,
+      name: 'Matt Johnson',
+      role: 'DEPARTMENT_HEAD',
+      systemRoleId: createdSystemRoles['DEPARTMENT_HEAD'],
+    },
+  })
+
+  const simon = await prisma.user.upsert({
+    where: { email: 'simon@example.com' },
+    update: { systemRoleId: createdSystemRoles['DEPARTMENT_HEAD'] },
+    create: {
+      email: 'simon@example.com',
+      password: hashedPassword,
+      name: 'Simon Lee',
+      role: 'DEPARTMENT_HEAD',
+      systemRoleId: createdSystemRoles['DEPARTMENT_HEAD'],
     },
   })
 
   console.log('✓ Users created')
 
   // ============================================
+  // BUSINESS UNITS
+  // ============================================
+  console.log('Creating business units...')
+
+  const buElectronics = await prisma.businessUnit.upsert({
+    where: { code: 'JE' },
+    update: { leaderId: brad.id },
+    create: {
+      name: 'Jarvis Electronics',
+      code: 'JE',
+      description: 'Consumer electronics and mobile devices',
+      leaderId: brad.id,
+    },
+  })
+
+  const buTelecom = await prisma.businessUnit.upsert({
+    where: { code: 'JT' },
+    update: { leaderId: maggi.id },
+    create: {
+      name: 'Jarvis Telecom',
+      code: 'JT',
+      description: 'Telecommunications and network infrastructure',
+      leaderId: maggi.id,
+    },
+  })
+
+  const buMining = await prisma.businessUnit.upsert({
+    where: { code: 'JM' },
+    update: { leaderId: ashley.id },
+    create: {
+      name: 'Jarvis Mining',
+      code: 'JM',
+      description: 'Mining operations and resource extraction',
+      leaderId: ashley.id,
+    },
+  })
+
+  console.log('✓ Business units created')
+
+  // ============================================
+  // COST CENTERS
+  // ============================================
+  console.log('Creating cost centers...')
+
+  // Jarvis Electronics Cost Centers
+  const ccMobilePhones = await prisma.costCenter.upsert({
+    where: { code: 'JE-MP' },
+    update: { businessUnitId: buElectronics.id },
+    create: {
+      code: 'JE-MP',
+      name: 'Mobile Phones',
+      type: 'OPEX',
+      businessUnitId: buElectronics.id,
+    },
+  })
+
+  const ccHardwareDevices = await prisma.costCenter.upsert({
+    where: { code: 'JE-HD' },
+    update: { businessUnitId: buElectronics.id },
+    create: {
+      code: 'JE-HD',
+      name: 'Hardware Devices',
+      type: 'OPEX',
+      businessUnitId: buElectronics.id,
+    },
+  })
+
+  const ccSatelliteEquip = await prisma.costCenter.upsert({
+    where: { code: 'JE-SE' },
+    update: { businessUnitId: buElectronics.id },
+    create: {
+      code: 'JE-SE',
+      name: 'Satellite Equipment',
+      type: 'CAPEX',
+      businessUnitId: buElectronics.id,
+    },
+  })
+
+  // Jarvis Telecom Cost Centers
+  const ccNetworkInfra = await prisma.costCenter.upsert({
+    where: { code: 'JT-NI' },
+    update: { businessUnitId: buTelecom.id },
+    create: {
+      code: 'JT-NI',
+      name: 'Network Infrastructure',
+      type: 'CAPEX',
+      businessUnitId: buTelecom.id,
+    },
+  })
+
+  const ccCustomerSupport = await prisma.costCenter.upsert({
+    where: { code: 'JT-CS' },
+    update: { businessUnitId: buTelecom.id },
+    create: {
+      code: 'JT-CS',
+      name: 'Customer Support',
+      type: 'OPEX',
+      businessUnitId: buTelecom.id,
+    },
+  })
+
+  const ccFieldOps = await prisma.costCenter.upsert({
+    where: { code: 'JT-FO' },
+    update: { businessUnitId: buTelecom.id },
+    create: {
+      code: 'JT-FO',
+      name: 'Field Operations',
+      type: 'OPEX',
+      businessUnitId: buTelecom.id,
+    },
+  })
+
+  // Jarvis Mining Cost Centers
+  const ccExtraction = await prisma.costCenter.upsert({
+    where: { code: 'JM-EX' },
+    update: { businessUnitId: buMining.id },
+    create: {
+      code: 'JM-EX',
+      name: 'Extraction',
+      type: 'OPEX',
+      businessUnitId: buMining.id,
+    },
+  })
+
+  const ccProcessing = await prisma.costCenter.upsert({
+    where: { code: 'JM-PR' },
+    update: { businessUnitId: buMining.id },
+    create: {
+      code: 'JM-PR',
+      name: 'Processing',
+      type: 'OPEX',
+      businessUnitId: buMining.id,
+    },
+  })
+
+  const ccLogistics = await prisma.costCenter.upsert({
+    where: { code: 'JM-LG' },
+    update: { businessUnitId: buMining.id },
+    create: {
+      code: 'JM-LG',
+      name: 'Logistics',
+      type: 'OPEX',
+      businessUnitId: buMining.id,
+    },
+  })
+
+  console.log('✓ Cost centers created')
+
+  // ============================================
+  // DEPARTMENTS (Shared across Cost Centers)
+  // ============================================
+  console.log('Creating departments...')
+
+  // Engineering - assigned to Jack
+  const deptEngineering = await prisma.department.upsert({
+    where: { code: 'ENG' },
+    update: { headId: jack.id, costCenterId: ccMobilePhones.id },
+    create: {
+      name: 'Engineering',
+      code: 'ENG',
+      headId: jack.id,
+      costCenterId: ccMobilePhones.id,
+      location: 'HQ - San Francisco',
+    },
+  })
+
+  // Product - assigned to Matt
+  const deptProduct = await prisma.department.upsert({
+    where: { code: 'PROD' },
+    update: { headId: matt.id, costCenterId: ccMobilePhones.id },
+    create: {
+      name: 'Product',
+      code: 'PROD',
+      headId: matt.id,
+      costCenterId: ccMobilePhones.id,
+      location: 'HQ - San Francisco',
+    },
+  })
+
+  // Sales - assigned to Simon
+  const deptSales = await prisma.department.upsert({
+    where: { code: 'SALES' },
+    update: { headId: simon.id, costCenterId: ccMobilePhones.id },
+    create: {
+      name: 'Sales',
+      code: 'SALES',
+      headId: simon.id,
+      costCenterId: ccMobilePhones.id,
+      location: 'NYC Office',
+    },
+  })
+
+  // HR
+  const deptHR = await prisma.department.upsert({
+    where: { code: 'HR' },
+    update: { costCenterId: ccHardwareDevices.id },
+    create: {
+      name: 'Human Resources',
+      code: 'HR',
+      costCenterId: ccHardwareDevices.id,
+      location: 'HQ - San Francisco',
+    },
+  })
+
+  // Finance
+  const deptFinance = await prisma.department.upsert({
+    where: { code: 'FIN' },
+    update: { costCenterId: ccHardwareDevices.id },
+    create: {
+      name: 'Finance',
+      code: 'FIN',
+      costCenterId: ccHardwareDevices.id,
+      location: 'HQ - San Francisco',
+    },
+  })
+
+  // Marketing
+  const deptMarketing = await prisma.department.upsert({
+    where: { code: 'MKT' },
+    update: { costCenterId: ccSatelliteEquip.id },
+    create: {
+      name: 'Marketing',
+      code: 'MKT',
+      costCenterId: ccSatelliteEquip.id,
+      location: 'LA Office',
+    },
+  })
+
+  // Support
+  const deptSupport = await prisma.department.upsert({
+    where: { code: 'SUP' },
+    update: { costCenterId: ccSatelliteEquip.id },
+    create: {
+      name: 'Customer Support',
+      code: 'SUP',
+      costCenterId: ccSatelliteEquip.id,
+      location: 'Austin Office',
+    },
+  })
+
+  console.log('✓ Departments created')
+
+  // ============================================
   // PAY GRADES
   // ============================================
+  console.log('Creating pay grades...')
+
   const payGrades = await Promise.all([
     prisma.payGrade.upsert({
       where: { level: 1 },
@@ -75,115 +465,61 @@ async function main() {
       update: {},
       create: { name: 'Manager', level: 5, minSalary: 140000, midSalary: 170000, maxSalary: 200000 },
     }),
+    prisma.payGrade.upsert({
+      where: { level: 6 },
+      update: {},
+      create: { name: 'Director', level: 6, minSalary: 180000, midSalary: 220000, maxSalary: 260000 },
+    }),
   ])
+
   console.log('✓ Pay grades created')
-
-  // ============================================
-  // COST CENTERS
-  // ============================================
-  const ccEngineering = await prisma.costCenter.upsert({
-    where: { code: 'CC-ENG' },
-    update: {},
-    create: { code: 'CC-ENG', name: 'Engineering Cost Center', type: 'OPEX' },
-  })
-
-  const ccSales = await prisma.costCenter.upsert({
-    where: { code: 'CC-SALES' },
-    update: {},
-    create: { code: 'CC-SALES', name: 'Sales Cost Center', type: 'OPEX' },
-  })
-
-  const ccOperations = await prisma.costCenter.upsert({
-    where: { code: 'CC-OPS' },
-    update: {},
-    create: { code: 'CC-OPS', name: 'Operations Cost Center', type: 'OPEX' },
-  })
-  console.log('✓ Cost centers created')
-
-  // ============================================
-  // DEPARTMENTS
-  // ============================================
-  const engineering = await prisma.department.upsert({
-    where: { code: 'ENG' },
-    update: {},
-    create: {
-      name: 'Engineering',
-      code: 'ENG',
-      costCenterId: ccEngineering.id,
-      managerId: admin.id,
-      location: 'HQ - San Francisco',
-    },
-  })
-
-  const frontend = await prisma.department.upsert({
-    where: { code: 'FE' },
-    update: {},
-    create: {
-      name: 'Frontend Team',
-      code: 'FE',
-      parentId: engineering.id,
-      costCenterId: ccEngineering.id,
-      location: 'HQ - San Francisco',
-    },
-  })
-
-  const backend = await prisma.department.upsert({
-    where: { code: 'BE' },
-    update: {},
-    create: {
-      name: 'Backend Team',
-      code: 'BE',
-      parentId: engineering.id,
-      costCenterId: ccEngineering.id,
-      location: 'HQ - San Francisco',
-    },
-  })
-
-  const sales = await prisma.department.upsert({
-    where: { code: 'SALES' },
-    update: {},
-    create: {
-      name: 'Sales',
-      code: 'SALES',
-      costCenterId: ccSales.id,
-      location: 'NYC Office',
-    },
-  })
-
-  const operations = await prisma.department.upsert({
-    where: { code: 'OPS' },
-    update: {},
-    create: {
-      name: 'Operations',
-      code: 'OPS',
-      costCenterId: ccOperations.id,
-      location: 'Austin Office',
-    },
-  })
-  console.log('✓ Departments created')
 
   // ============================================
   // ROLES
   // ============================================
-  const roleFeEngineer = await prisma.role.upsert({
-    where: { code: 'FE-ENG' },
+  console.log('Creating roles...')
+
+  const roleEngLead = await prisma.role.upsert({
+    where: { code: 'ENG-LEAD' },
     update: {},
     create: {
-      name: 'Frontend Engineer',
-      code: 'FE-ENG',
-      departmentId: frontend.id,
-      payGradeId: payGrades[2].id, // Senior
+      name: 'Engineering Lead',
+      code: 'ENG-LEAD',
+      departmentId: deptEngineering.id,
+      payGradeId: payGrades[3].id,
     },
   })
 
-  const roleBeEngineer = await prisma.role.upsert({
-    where: { code: 'BE-ENG' },
+  const roleSrEngineer = await prisma.role.upsert({
+    where: { code: 'SR-ENG' },
     update: {},
     create: {
-      name: 'Backend Engineer',
-      code: 'BE-ENG',
-      departmentId: backend.id,
+      name: 'Senior Engineer',
+      code: 'SR-ENG',
+      departmentId: deptEngineering.id,
       payGradeId: payGrades[2].id,
+    },
+  })
+
+  const roleEngineer = await prisma.role.upsert({
+    where: { code: 'JR-ENG' },
+    update: {},
+    create: {
+      name: 'Engineer',
+      code: 'JR-ENG',
+      departmentId: deptEngineering.id,
+      payGradeId: payGrades[1].id,
+    },
+  })
+
+  const roleProdManager = await prisma.role.upsert({
+    where: { code: 'PM' },
+    update: {},
+    create: {
+      name: 'Product Manager',
+      code: 'PM',
+      departmentId: deptProduct.id,
+      payGradeId: payGrades[3].id,
     },
   })
 
@@ -193,7 +529,7 @@ async function main() {
     create: {
       name: 'Sales Representative',
       code: 'SALES-REP',
-      departmentId: sales.id,
+      departmentId: deptSales.id,
       payGradeId: payGrades[1].id,
     },
   })
@@ -204,22 +540,27 @@ async function main() {
     create: {
       name: 'Sales Manager',
       code: 'SALES-MGR',
-      departmentId: sales.id,
+      departmentId: deptSales.id,
       payGradeId: payGrades[4].id,
     },
   })
+
   console.log('✓ Roles created')
 
   // ============================================
   // EMPLOYEES
   // ============================================
+  console.log('Creating employees...')
+
   const employees = [
-    { employeeId: 'EMP001', name: 'Alice Johnson', email: 'alice@example.com', title: 'Senior Frontend Engineer', departmentId: frontend.id, roleId: roleFeEngineer.id, payGradeId: payGrades[2].id, currentSalary: 115000 },
-    { employeeId: 'EMP002', name: 'Bob Smith', email: 'bob@example.com', title: 'Frontend Engineer', departmentId: frontend.id, roleId: roleFeEngineer.id, payGradeId: payGrades[1].id, currentSalary: 75000 },
-    { employeeId: 'EMP003', name: 'Carol Williams', email: 'carol@example.com', title: 'Senior Backend Engineer', departmentId: backend.id, roleId: roleBeEngineer.id, payGradeId: payGrades[2].id, currentSalary: 120000 },
-    { employeeId: 'EMP004', name: 'David Brown', email: 'david@example.com', title: 'Backend Engineer', departmentId: backend.id, roleId: roleBeEngineer.id, payGradeId: payGrades[1].id, currentSalary: 78000 },
-    { employeeId: 'EMP005', name: 'Eve Davis', email: 'eve@example.com', title: 'Sales Manager', departmentId: sales.id, roleId: roleSalesMgr.id, payGradeId: payGrades[4].id, currentSalary: 155000 },
-    { employeeId: 'EMP006', name: 'Frank Miller', email: 'frank@example.com', title: 'Sales Representative', departmentId: sales.id, roleId: roleSalesRep.id, payGradeId: payGrades[1].id, currentSalary: 65000 },
+    { employeeId: 'EMP001', name: 'Alice Chen', email: 'alice@company.com', title: 'Engineering Lead', departmentId: deptEngineering.id, roleId: roleEngLead.id, payGradeId: payGrades[3].id, currentSalary: 145000 },
+    { employeeId: 'EMP002', name: 'Bob Martinez', email: 'bob@company.com', title: 'Senior Engineer', departmentId: deptEngineering.id, roleId: roleSrEngineer.id, payGradeId: payGrades[2].id, currentSalary: 105000 },
+    { employeeId: 'EMP003', name: 'Carol Davis', email: 'carol@company.com', title: 'Engineer', departmentId: deptEngineering.id, roleId: roleEngineer.id, payGradeId: payGrades[1].id, currentSalary: 72000 },
+    { employeeId: 'EMP004', name: 'David Kim', email: 'david@company.com', title: 'Senior Engineer', departmentId: deptEngineering.id, roleId: roleSrEngineer.id, payGradeId: payGrades[2].id, currentSalary: 110000 },
+    { employeeId: 'EMP005', name: 'Eva Wilson', email: 'eva@company.com', title: 'Product Manager', departmentId: deptProduct.id, roleId: roleProdManager.id, payGradeId: payGrades[3].id, currentSalary: 130000 },
+    { employeeId: 'EMP006', name: 'Frank Brown', email: 'frank@company.com', title: 'Sales Manager', departmentId: deptSales.id, roleId: roleSalesMgr.id, payGradeId: payGrades[4].id, currentSalary: 155000 },
+    { employeeId: 'EMP007', name: 'Grace Lee', email: 'grace@company.com', title: 'Sales Representative', departmentId: deptSales.id, roleId: roleSalesRep.id, payGradeId: payGrades[1].id, currentSalary: 65000 },
+    { employeeId: 'EMP008', name: 'Henry Taylor', email: 'henry@company.com', title: 'Sales Representative', departmentId: deptSales.id, roleId: roleSalesRep.id, payGradeId: payGrades[1].id, currentSalary: 68000 },
   ]
 
   for (const emp of employees) {
@@ -229,181 +570,53 @@ async function main() {
       create: { ...emp, hireDate: new Date('2023-01-15'), status: 'ACTIVE' },
     })
   }
+
   console.log('✓ Employees created')
 
   // ============================================
-  // PLANNING CYCLE
+  // SUMMARY
   // ============================================
-  const fy2025 = await prisma.planningCycle.create({
-    data: {
-      name: 'FY 2025',
-      type: 'ANNUAL',
-      startDate: new Date('2025-01-01'),
-      endDate: new Date('2025-12-31'),
-      status: 'ACTIVE',
-    },
-  })
-  console.log('✓ Planning cycle created')
-
-  // ============================================
-  // BUDGET ALLOCATIONS
-  // ============================================
-  await prisma.budgetAllocation.create({
-    data: {
-      cycleId: fy2025.id,
-      departmentId: engineering.id,
-      costCenterId: ccEngineering.id,
-      totalBudget: 800000,
-      salaryBudget: 600000,
-      benefitsBudget: 100000,
-      hiringBudget: 100000,
-      status: 'APPROVED',
-    },
-  })
-
-  await prisma.budgetAllocation.create({
-    data: {
-      cycleId: fy2025.id,
-      departmentId: sales.id,
-      costCenterId: ccSales.id,
-      totalBudget: 400000,
-      salaryBudget: 300000,
-      benefitsBudget: 50000,
-      hiringBudget: 50000,
-      status: 'APPROVED',
-    },
-  })
-  console.log('✓ Budget allocations created')
-
-  // ============================================
-  // HEADCOUNT PLANS
-  // ============================================
-  await prisma.headcountPlan.create({
-    data: {
-      cycleId: fy2025.id,
-      departmentId: engineering.id,
-      plannedHeadcount: 8,
-      approvedHires: 4,
-      actualHeadcount: 4,
-      wageBudget: 600000,
-      actualWageCost: 388000,
-      status: 'APPROVED',
-    },
-  })
-
-  await prisma.headcountPlan.create({
-    data: {
-      cycleId: fy2025.id,
-      departmentId: sales.id,
-      plannedHeadcount: 5,
-      approvedHires: 3,
-      actualHeadcount: 2,
-      wageBudget: 300000,
-      actualWageCost: 220000,
-      status: 'APPROVED',
-    },
-  })
-  console.log('✓ Headcount plans created')
-
-  // ============================================
-  // HIRING PROPOSALS
-  // ============================================
-  await prisma.hiringProposal.create({
-    data: {
-      cycleId: fy2025.id,
-      departmentId: frontend.id,
-      roleId: roleFeEngineer.id,
-      proposedBy: admin.id,
-      positionTitle: 'Senior Frontend Engineer',
-      quantity: 2,
-      justification: 'Expanding team to support new product features',
-      proposedSalary: 110000,
-      startMonth: 3,
-      status: 'APPROVED',
-    },
-  })
-
-  await prisma.hiringProposal.create({
-    data: {
-      cycleId: fy2025.id,
-      departmentId: backend.id,
-      roleId: roleBeEngineer.id,
-      proposedBy: admin.id,
-      positionTitle: 'Backend Engineer',
-      quantity: 1,
-      justification: 'Replace departing team member',
-      proposedSalary: 95000,
-      startMonth: 2,
-      status: 'HR_REVIEW',
-    },
-  })
-  console.log('✓ Hiring proposals created')
-
-  // ============================================
-  // COMPENSATION CYCLE
-  // ============================================
-  const compCycle = await prisma.compensationCycle.create({
-    data: {
-      cycleId: fy2025.id,
-      name: 'Annual Review 2025',
-      type: 'SALARY_REVISION',
-      budgetAmount: 50000,
-      status: 'OPEN',
-      effectiveDate: new Date('2025-04-01'),
-    },
-  })
-
-  // Sample compensation action
-  await prisma.compensationAction.create({
-    data: {
-      compensationCycleId: compCycle.id,
-      employeeId: (await prisma.employee.findUnique({ where: { employeeId: 'EMP002' } }))!.id,
-      proposedBy: admin.id,
-      actionType: 'MERIT_INCREASE',
-      currentSalary: 75000,
-      proposedSalary: 82000,
-      percentageChange: 9.3,
-      justification: 'Excellent performance, taking on senior responsibilities',
-      status: 'SUBMITTED',
-    },
-  })
-  console.log('✓ Compensation cycle created')
-
-  // ============================================
-  // EXPENSES (OPEX Tracking)
-  // ============================================
-  const months = [1, 2, 3]
-  for (const month of months) {
-    await prisma.expense.create({
-      data: {
-        cycleId: fy2025.id,
-        costCenterId: ccEngineering.id,
-        category: 'SALARY',
-        description: `Engineering salaries - Month ${month}`,
-        amount: 48000,
-        month,
-        isActual: true,
-      },
-    })
-    await prisma.expense.create({
-      data: {
-        cycleId: fy2025.id,
-        costCenterId: ccSales.id,
-        category: 'SALARY',
-        description: `Sales salaries - Month ${month}`,
-        amount: 22000,
-        month,
-        isActual: true,
-      },
-    })
-  }
-  console.log('✓ Expenses created')
-
-  console.log('\n✅ Seed completed successfully!')
-  console.log('\nLogin credentials:')
-  console.log('  Admin: admin@example.com / password123')
-  console.log('  HR: hr@example.com / password123')
-  console.log('  Finance: finance@example.com / password123')
+  console.log('\n✅ Seed completed successfully!\n')
+  console.log('='.repeat(50))
+  console.log('LOGIN CREDENTIALS (password: password123)')
+  console.log('='.repeat(50))
+  console.log('\n📊 Compensation Manager:')
+  console.log('   admin@example.com')
+  console.log('\n👥 HR Admin:')
+  console.log('   hr@example.com')
+  console.log('\n💰 Finance Head:')
+  console.log('   finance@example.com')
+  console.log('\n🏢 BU Leaders:')
+  console.log('   brad@example.com   (Jarvis Electronics)')
+  console.log('   maggi@example.com  (Jarvis Telecom)')
+  console.log('   ashley@example.com (Jarvis Mining)')
+  console.log('\n👤 Department Heads:')
+  console.log('   jack@example.com   (Engineering)')
+  console.log('   matt@example.com   (Product)')
+  console.log('   simon@example.com  (Sales)')
+  console.log('\n' + '='.repeat(50))
+  console.log('\nORGANIZATION HIERARCHY:')
+  console.log('='.repeat(50))
+  console.log('\n🏛️  Jarvis Electronics (Brad)')
+  console.log('    ├── Mobile Phones')
+  console.log('    │   ├── Engineering (Jack)')
+  console.log('    │   ├── Product (Matt)')
+  console.log('    │   └── Sales (Simon)')
+  console.log('    ├── Hardware Devices')
+  console.log('    │   ├── HR')
+  console.log('    │   └── Finance')
+  console.log('    └── Satellite Equipment')
+  console.log('        ├── Marketing')
+  console.log('        └── Customer Support')
+  console.log('\n🏛️  Jarvis Telecom (Maggi)')
+  console.log('    ├── Network Infrastructure')
+  console.log('    ├── Customer Support')
+  console.log('    └── Field Operations')
+  console.log('\n🏛️  Jarvis Mining (Ashley)')
+  console.log('    ├── Extraction')
+  console.log('    ├── Processing')
+  console.log('    └── Logistics')
+  console.log('')
 }
 
 main()
