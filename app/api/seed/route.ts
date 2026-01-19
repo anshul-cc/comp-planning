@@ -1,57 +1,141 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { SYSTEM_ROLES } from '@/lib/permissions'
 
-// One-time seed endpoint - DELETE after use
 export async function GET() {
   try {
-    // Check if already seeded
-    const existingUser = await prisma.user.findUnique({
-      where: { email: 'admin@example.com' }
-    })
-
-    if (existingUser) {
-      return NextResponse.json({ message: 'Database already seeded' })
-    }
-
     const hashedPassword = await bcrypt.hash('password123', 10)
 
-    // Create admin user
-    await prisma.user.create({
-      data: {
+    // ============================================
+    // SYSTEM ROLES & PERMISSIONS
+    // ============================================
+    console.log('Creating system roles and permissions...')
+
+    const createdSystemRoles: Record<string, string> = {}
+
+    for (const roleDef of SYSTEM_ROLES) {
+      const systemRole = await prisma.systemRole.upsert({
+        where: { code: roleDef.code },
+        update: {
+          name: roleDef.name,
+          description: roleDef.description,
+          isSystemRole: roleDef.isSystemRole,
+        },
+        create: {
+          code: roleDef.code,
+          name: roleDef.name,
+          description: roleDef.description,
+          isSystemRole: roleDef.isSystemRole,
+        },
+      })
+
+      createdSystemRoles[roleDef.code] = systemRole.id
+
+      // Create permissions for this role
+      for (const perm of roleDef.permissions) {
+        await prisma.rolePermission.upsert({
+          where: {
+            systemRoleId_resource: {
+              systemRoleId: systemRole.id,
+              resource: perm.resource,
+            },
+          },
+          update: {
+            actions: JSON.stringify(perm.actions),
+            scope: perm.scope,
+          },
+          create: {
+            systemRoleId: systemRole.id,
+            resource: perm.resource,
+            actions: JSON.stringify(perm.actions),
+            scope: perm.scope,
+          },
+        })
+      }
+    }
+
+    // ============================================
+    // USERS
+    // ============================================
+    console.log('Creating users...')
+
+    // Super Admin
+    await prisma.user.upsert({
+      where: { email: 'superadmin@example.com' },
+      update: {
+        role: 'SUPER_ADMIN',
+        name: 'Super Admin',
+        systemRoleId: createdSystemRoles['SUPER_ADMIN'],
+      },
+      create: {
+        email: 'superadmin@example.com',
+        password: hashedPassword,
+        name: 'Super Admin',
+        role: 'SUPER_ADMIN',
+        systemRoleId: createdSystemRoles['SUPER_ADMIN'],
+      },
+    })
+
+    // Compensation Manager (Admin)
+    await prisma.user.upsert({
+      where: { email: 'admin@example.com' },
+      update: {
+        role: 'COMPENSATION_MANAGER',
+        name: 'Admin User',
+        systemRoleId: createdSystemRoles['COMPENSATION_MANAGER'],
+      },
+      create: {
         email: 'admin@example.com',
         password: hashedPassword,
         name: 'Admin User',
-        role: 'ADMIN',
+        role: 'COMPENSATION_MANAGER',
+        systemRoleId: createdSystemRoles['COMPENSATION_MANAGER'],
       },
     })
 
-    // Create HR user
-    await prisma.user.create({
-      data: {
+    // HR Admin
+    await prisma.user.upsert({
+      where: { email: 'hr@example.com' },
+      update: {
+        role: 'HR_ADMIN',
+        name: 'HR Manager',
+        systemRoleId: createdSystemRoles['HR_ADMIN'],
+      },
+      create: {
         email: 'hr@example.com',
         password: hashedPassword,
         name: 'HR Manager',
-        role: 'HR',
+        role: 'HR_ADMIN',
+        systemRoleId: createdSystemRoles['HR_ADMIN'],
       },
     })
 
-    // Create Finance user
-    await prisma.user.create({
-      data: {
+    // Finance Head
+    await prisma.user.upsert({
+      where: { email: 'finance@example.com' },
+      update: {
+        role: 'FINANCE_HEAD',
+        name: 'Finance Manager',
+        systemRoleId: createdSystemRoles['FINANCE_HEAD'],
+      },
+      create: {
         email: 'finance@example.com',
         password: hashedPassword,
         name: 'Finance Manager',
-        role: 'FINANCE',
+        role: 'FINANCE_HEAD',
+        systemRoleId: createdSystemRoles['FINANCE_HEAD'],
       },
     })
 
     return NextResponse.json({
       message: 'Database seeded successfully!',
+      systemRoles: Object.keys(createdSystemRoles),
       credentials: {
-        admin: 'admin@example.com / password123',
-        hr: 'hr@example.com / password123',
-        finance: 'finance@example.com / password123'
+        superAdmin: 'superadmin@example.com / password123',
+        compensationManager: 'admin@example.com / password123',
+        hrAdmin: 'hr@example.com / password123',
+        financeHead: 'finance@example.com / password123',
       }
     })
   } catch (error) {
