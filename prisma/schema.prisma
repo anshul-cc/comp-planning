@@ -16,49 +16,49 @@ model User {
   email     String   @unique
   password  String
   name      String
-  role      String   @default("USER") // ADMIN, HR, FINANCE, MANAGER, USER
+  role      String   @default("USER") // COMPENSATION_MANAGER, HR_ADMIN, BU_LEADER, DEPARTMENT_HEAD, USER
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  managedDepartments  Department[]
-  approvals           Approval[]
-  hiringProposals     HiringProposal[]
-  compensationActions CompensationAction[]
-}
+  // Management relationships
+  managedBusinessUnits BusinessUnit[] @relation("BULeader")
+  managedDepartments   Department[]   @relation("DepartmentHead")
 
-// ============================================
-// PLANNING CYCLES
-// ============================================
-
-model PlanningCycle {
-  id        String   @id @default(cuid())
-  name      String   // "FY 2025", "H1 2025"
-  type      String   // ANNUAL, HALF_YEARLY, QUARTERLY
-  startDate DateTime
-  endDate   DateTime
-  status    String   @default("DRAFT") // DRAFT, PLANNING, ACTIVE, CLOSED
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  budgetAllocations   BudgetAllocation[]
-  headcountPlans      HeadcountPlan[]
-  hiringProposals     HiringProposal[]
-  compensationCycles  CompensationCycle[]
-  expenses            Expense[]
+  // Other relationships
+  approvals            Approval[]
+  hiringProposals      HiringProposal[]
+  compensationActions  CompensationAction[]
+  createdCycles        PlanningCycle[]      @relation("CycleCreator")
 }
 
 // ============================================
 // ORGANIZATION STRUCTURE
 // ============================================
 
-model CostCenter {
-  id        String   @id @default(cuid())
-  code      String   @unique
-  name      String
-  type      String   @default("OPEX") // OPEX, CAPEX
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model BusinessUnit {
+  id          String   @id @default(cuid())
+  name        String
+  code        String   @unique
+  description String?
+  leaderId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
+  leader      User?        @relation("BULeader", fields: [leaderId], references: [id])
+  costCenters CostCenter[]
+  budgetAllocations BudgetAllocation[]
+}
+
+model CostCenter {
+  id             String   @id @default(cuid())
+  code           String   @unique
+  name           String
+  type           String   @default("OPEX") // OPEX, CAPEX
+  businessUnitId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  businessUnit      BusinessUnit?      @relation(fields: [businessUnitId], references: [id])
   departments       Department[]
   budgetAllocations BudgetAllocation[]
   expenses          Expense[]
@@ -68,16 +68,13 @@ model Department {
   id           String   @id @default(cuid())
   name         String
   code         String   @unique
-  parentId     String?
-  managerId    String?
+  headId       String?
   costCenterId String?
   location     String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  parent            Department?        @relation("DepartmentHierarchy", fields: [parentId], references: [id])
-  children          Department[]       @relation("DepartmentHierarchy")
-  manager           User?              @relation(fields: [managerId], references: [id])
+  head              User?              @relation("DepartmentHead", fields: [headId], references: [id])
   costCenter        CostCenter?        @relation(fields: [costCenterId], references: [id])
   roles             Role[]
   employees         Employee[]
@@ -102,21 +99,137 @@ model Role {
 }
 
 // ============================================
+// PLANNING CYCLES (Budget Cycles)
+// ============================================
+
+model PlanningCycle {
+  id          String   @id @default(cuid())
+  name        String   // "FY 2025", "H1 2025"
+  type        String   // ANNUAL, HALF_YEARLY
+  startDate   DateTime
+  endDate     DateTime
+  totalBudget Float    @default(0) // Total budget for this cycle
+  status      String   @default("DRAFT") // DRAFT, ALLOCATION, REVIEW, APPROVED, ACTIVE, CLOSED
+  createdById String?
+
+  // Configurable approval workflow
+  requireDeptApproval Boolean @default(true)
+  requireBUApproval   Boolean @default(true)
+  requireFinalApproval Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdBy           User?              @relation("CycleCreator", fields: [createdById], references: [id])
+  budgetAllocations   BudgetAllocation[]
+  headcountPlans      HeadcountPlan[]
+  hiringProposals     HiringProposal[]
+  compensationCycles  CompensationCycle[]
+  expenses            Expense[]
+}
+
+// ============================================
+// BUDGET MANAGEMENT
+// ============================================
+
+model BudgetAllocation {
+  id               String   @id @default(cuid())
+  cycleId          String
+
+  // Hierarchical level - only ONE of these should be set
+  businessUnitId   String?  // BU-level allocation
+  costCenterId     String?  // Cost Center-level allocation
+  departmentId     String?  // Department-level allocation
+
+  // Parent allocation reference (for hierarchy validation)
+  parentAllocationId String?
+
+  // Salary Budget (split into fixed and variable per PRD)
+  salaryFixed      Float    @default(0) // Min: 10000 for departments
+  salaryVariable   Float    @default(0) // Variable compensation budget
+
+  // Benefits Budget (split per PRD)
+  benefitsEmployee Float    @default(0) // Employee-paid benefits
+  benefitsEmployer Float    @default(0) // Employer-paid benefits
+
+  // Hiring Budget
+  newHiringBudget  Float    @default(0) // Budget for new hires
+
+  // Legacy fields for backward compatibility
+  totalBudget      Float    // Computed: sum of all above
+  salaryBudget     Float    @default(0) // Keep for backward compatibility
+  benefitsBudget   Float    @default(0) // Keep for backward compatibility
+  hiringBudget     Float    @default(0) // Keep for backward compatibility
+
+  // Previous year reference
+  previousYearBudget    Float? // Last year's budget for comparison
+  recommendedAllocation Float? // System recommendation
+
+  // Workflow status
+  status           String   @default("DRAFT") // DRAFT, SUBMITTED, PENDING_APPROVAL, REVISION_REQUIRED, APPROVED, LOCKED
+  version          Int      @default(1) // Version number for optimistic locking
+  submittedAt      DateTime?
+  submittedBy      String?
+  approvedAt       DateTime?
+  approvedBy       String?
+
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  cycle        PlanningCycle @relation(fields: [cycleId], references: [id])
+  businessUnit BusinessUnit? @relation(fields: [businessUnitId], references: [id])
+  costCenter   CostCenter?   @relation(fields: [costCenterId], references: [id])
+  department   Department?   @relation(fields: [departmentId], references: [id])
+  approvals    Approval[]
+  comments     BudgetComment[]
+
+  @@unique([cycleId, businessUnitId])
+  @@unique([cycleId, costCenterId])
+  @@unique([cycleId, departmentId])
+}
+
+model BudgetComment {
+  id                 String   @id @default(cuid())
+  budgetAllocationId String
+  userId             String
+  userName           String
+  comment            String
+  isRevisionRequest  Boolean  @default(false)
+  createdAt          DateTime @default(now())
+
+  budgetAllocation BudgetAllocation @relation(fields: [budgetAllocationId], references: [id])
+}
+
+// ============================================
 // PAY STRUCTURE
 // ============================================
 
 model PayGrade {
   id        String   @id @default(cuid())
+  code      String   // e.g., 'A', 'B', 'C'
   name      String   // "Grade 1", "L5", "Senior Band"
   level     Int      @unique
-  minSalary Float
-  midSalary Float
-  maxSalary Float
+  band      Int      @default(1) // Band within grade (e.g., 1, 2, 3)
+
+  // Compensation range
+  minSalary Float    // compMin
+  midSalary Float    // compMidpoint (can be calculated)
+  maxSalary Float    // compMax
+
+  currencyCode  String   @default("USD")
+  status        String   @default("DRAFT") // DRAFT, ACTIVE, INACTIVE
+  effectiveDate DateTime @default(now())
+  expiryDate    DateTime?
+
+  notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   roles     Role[]
   employees Employee[]
+
+  @@unique([code, band, level])
 }
 
 // ============================================
@@ -145,32 +258,6 @@ model Employee {
 }
 
 // ============================================
-// BUDGET MANAGEMENT
-// ============================================
-
-model BudgetAllocation {
-  id             String   @id @default(cuid())
-  cycleId        String
-  costCenterId   String?
-  departmentId   String?
-  totalBudget    Float    // Total approved budget
-  salaryBudget   Float    // Budget for salaries
-  benefitsBudget Float    @default(0) // Budget for benefits
-  hiringBudget   Float    @default(0) // Budget for new hires
-  status         String   @default("DRAFT") // DRAFT, PENDING, APPROVED, REJECTED
-  notes          String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  cycle      PlanningCycle @relation(fields: [cycleId], references: [id])
-  costCenter CostCenter?   @relation(fields: [costCenterId], references: [id])
-  department Department?   @relation(fields: [departmentId], references: [id])
-  approvals  Approval[]
-
-  @@unique([cycleId, departmentId])
-}
-
-// ============================================
 // HEADCOUNT PLANNING
 // ============================================
 
@@ -178,12 +265,27 @@ model HeadcountPlan {
   id               String   @id @default(cuid())
   cycleId          String
   departmentId     String
+  roleId           String?  // Optional: for role-level planning
   plannedHeadcount Int      // Target headcount
   approvedHires    Int      @default(0) // Approved new hires
   actualHeadcount  Int      @default(0) // Current actual
+
+  // Cost tracking
   wageBudget       Float    // Total wage cost budget
   actualWageCost   Float    @default(0) // Actual spent
-  status           String   @default("DRAFT") // DRAFT, SUBMITTED, APPROVED, REJECTED
+
+  // Average hiring cost breakdown (per position)
+  avgHiringCost         Float  @default(0)
+  avgHiringCostFixed    Float  @default(0)
+  avgHiringCostVariable Float  @default(0)
+  avgHiringCostBenefits Float  @default(0)
+
+  // Override fields (NULL means use calculated value)
+  fillRateOverride      Float?  // Manual override for fill rate
+  hiringBudgetOverride  Float?  // Manual override for hiring budget
+  overrideReason        String? // Required when override is set
+
+  status           String   @default("DRAFT") // DRAFT, SUBMITTED, APPROVED, REJECTED, PARTIALLY_FILLED, FILLED
   notes            String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -227,14 +329,22 @@ model HiringProposal {
 
 model CompensationCycle {
   id           String   @id @default(cuid())
-  cycleId      String
+  cycleId      String   // Links to budget planning cycle
   name         String   // "Annual Review 2025", "Q1 Bonus"
-  type         String   // SALARY_REVISION, BONUS, PROMOTION
-  budgetAmount Float
-  status       String   @default("DRAFT") // DRAFT, OPEN, IN_REVIEW, APPROVED, COMPLETED
+  type         String   // ANNUAL_REVIEW, MID_YEAR_REVIEW, BONUS, PROMOTION, MARKET_ADJUSTMENT
+
+  // Feature Flags (per PRD)
+  enableSalaryRevision Boolean @default(false)
+  enableBonus          Boolean @default(false)
+  enablePromotion      Boolean @default(false)
+
+  budgetAmount  Float
+  startDate     DateTime?
+  endDate       DateTime?
   effectiveDate DateTime
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  status        String   @default("DRAFT") // DRAFT, OPEN, IN_PROGRESS, LOCKED, COMPLETED, CANCELLED
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   planningCycle PlanningCycle        @relation(fields: [cycleId], references: [id])
   actions       CompensationAction[]
@@ -288,13 +398,17 @@ model Expense {
 model Approval {
   id                   String   @id @default(cuid())
   approverId           String
-  status               String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  approverRole         String   // Role at time of approval
+  status               String   @default("PENDING") // PENDING, APPROVED, REJECTED, REVISION_REQUESTED
   comments             String?
+  step                 Int      @default(1) // 1=Dept, 2=BU, 3=Final
+
   // Polymorphic references - only one will be set
   budgetAllocationId   String?
   headcountPlanId      String?
   hiringProposalId     String?
   compensationActionId String?
+
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -303,4 +417,28 @@ model Approval {
   headcountPlan      HeadcountPlan?      @relation(fields: [headcountPlanId], references: [id])
   hiringProposal     HiringProposal?     @relation(fields: [hiringProposalId], references: [id])
   compensationAction CompensationAction? @relation(fields: [compensationActionId], references: [id])
+}
+
+// ============================================
+// AUDIT LOGGING
+// ============================================
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  entityType   String   // org_unit, budget_cycle, budget_allocation, headcount_plan, pay_grade, compensation_cycle, user, role
+  entityId     String
+  action       String   // create, update, delete, approve, reject, submit, override, status_change
+  fieldChanged String?  // Specific field if update
+  oldValue     Json?    // Previous value
+  newValue     Json?    // New value
+  userId       String
+  userRole     String
+  comment      String?
+  ipAddress    String?
+  sessionId    String?
+  createdAt    DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([createdAt])
 }
