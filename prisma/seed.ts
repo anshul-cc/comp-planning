@@ -98,6 +98,23 @@ async function main() {
     },
   })
 
+  // Super Admin
+  const superAdmin = await prisma.user.upsert({
+    where: { email: 'superadmin@example.com' },
+    update: {
+      role: 'SUPER_ADMIN',
+      name: 'Super Admin',
+      systemRoleId: createdSystemRoles['SUPER_ADMIN'],
+    },
+    create: {
+      email: 'superadmin@example.com',
+      password: hashedPassword,
+      name: 'Super Admin',
+      role: 'SUPER_ADMIN',
+      systemRoleId: createdSystemRoles['SUPER_ADMIN'],
+    },
+  })
+
   // Finance Head
   const financeHead = await prisma.user.upsert({
     where: { email: 'finance@example.com' },
@@ -580,6 +597,8 @@ async function main() {
   console.log('='.repeat(50))
   console.log('LOGIN CREDENTIALS (password: password123)')
   console.log('='.repeat(50))
+  console.log('\n🔐 Super Admin:')
+  console.log('   superadmin@example.com')
   console.log('\n📊 Compensation Manager:')
   console.log('   admin@example.com')
   console.log('\n👥 HR Admin:')

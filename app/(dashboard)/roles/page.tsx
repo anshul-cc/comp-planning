@@ -1,143 +1,650 @@
-import { prisma } from '@/lib/prisma'
-import { formatCurrency } from '@/lib/utils'
-import Link from 'next/link'
+'use client'
 
-async function getRoles() {
-  return prisma.role.findMany({
-    include: {
-      department: true,
-      payGrade: true,
-      _count: {
-        select: { employees: true },
-      },
-    },
-    orderBy: [{ department: { name: 'asc' } }, { name: 'asc' }],
-  })
+import { useState, useEffect } from 'react'
+import { RESOURCES } from '@/lib/permissions'
+
+interface SystemRole {
+  id: string
+  name: string
+  code: string
+  description: string | null
+  isSystemRole: boolean
+  _count: { users: number }
 }
 
-export default async function RolesPage() {
-  const roles = await getRoles()
+interface User {
+  id: string
+  name: string
+  email: string
+  role: string
+  systemRole: {
+    id: string
+    name: string
+    code: string
+  } | null
+}
 
-  // Group roles by department
-  const groupedRoles = roles.reduce((acc, role) => {
-    const deptName = role.department.name
-    if (!acc[deptName]) {
-      acc[deptName] = []
+interface CurrentUser {
+  id: string
+  name: string
+  email: string
+  isSuperAdmin: boolean
+}
+
+export default function RolesPage() {
+  const [users, setUsers] = useState<User[]>([])
+  const [systemRoles, setSystemRoles] = useState<SystemRole[]>([])
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Modal states
+  const [showAddUserModal, setShowAddUserModal] = useState(false)
+  const [showAddRoleModal, setShowAddRoleModal] = useState(false)
+  const [editingUserId, setEditingUserId] = useState<string | null>(null)
+  const [editPassword, setEditPassword] = useState('')
+  const [savingPassword, setSavingPassword] = useState(false)
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const fetchData = async () => {
+    try {
+      const [usersRes, rolesRes, meRes] = await Promise.all([
+        fetch('/api/users', { credentials: 'include' }),
+        fetch('/api/system-roles', { credentials: 'include' }),
+        fetch('/api/users/me', { credentials: 'include' }),
+      ])
+
+      if (!usersRes.ok || !rolesRes.ok || !meRes.ok) {
+        throw new Error('Failed to fetch data')
+      }
+
+      const [usersData, rolesData, meData] = await Promise.all([
+        usersRes.json(),
+        rolesRes.json(),
+        meRes.json(),
+      ])
+
+      setUsers(usersData)
+      setSystemRoles(rolesData)
+      setCurrentUser(meData)
+    } catch (err) {
+      setError('Failed to load data. Please refresh the page.')
+    } finally {
+      setLoading(false)
     }
-    acc[deptName].push(role)
+  }
+
+  const handleSavePassword = async (userId: string) => {
+    if (!editPassword.trim()) return
+
+    setSavingPassword(true)
+    try {
+      const res = await fetch(`/api/users/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ password: editPassword }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to update password')
+      }
+
+      setEditingUserId(null)
+      setEditPassword('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update password')
+    } finally {
+      setSavingPassword(false)
+    }
+  }
+
+  // Group users by their system role
+  const groupedUsers = users.reduce((acc, user) => {
+    const roleName = user.systemRole?.name || 'No Role Assigned'
+    if (!acc[roleName]) {
+      acc[roleName] = []
+    }
+    acc[roleName].push(user)
     return acc
-  }, {} as Record<string, typeof roles>)
+  }, {} as Record<string, User[]>)
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Roles</h1>
-          <p className="mt-1 text-slate-500">Manage job roles and their associated pay grades</p>
+          <h1 className="text-3xl font-bold text-slate-900">System Roles & Users</h1>
+          <p className="mt-1 text-slate-500">Manage system roles and user access</p>
         </div>
-        <Link href="/roles/new" className="btn-primary">
-          New Role
-        </Link>
+        {currentUser?.isSuperAdmin && (
+          <div className="flex gap-3">
+            <div className="relative group">
+              <button
+                onClick={() => setShowAddUserModal(true)}
+                className="btn-primary"
+              >
+                Add New User
+              </button>
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-slate-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                Create a user with a system role
+              </div>
+            </div>
+            <div className="relative group">
+              <button
+                onClick={() => setShowAddRoleModal(true)}
+                className="btn"
+              >
+                Add New Role
+              </button>
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-slate-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                Define a custom role with permissions
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          {error}
+          <button onClick={() => setError(null)} className="ml-2 underline">Dismiss</button>
+        </div>
+      )}
+
       <div className="space-y-8">
-        {Object.entries(groupedRoles).map(([deptName, deptRoles]) => (
-          <div key={deptName}>
+        {Object.entries(groupedUsers).map(([roleName, roleUsers]) => (
+          <div key={roleName}>
             <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-              <BuildingIcon className="h-5 w-5 text-slate-400" />
-              {deptName}
+              <ShieldIcon className="h-5 w-5 text-indigo-500" />
+              {roleName}
+              <span className="text-sm font-normal text-slate-500">({roleUsers.length} users)</span>
             </h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {deptRoles.map((role) => (
-                <div key={role.id} className="card p-5 hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-semibold text-slate-900">{role.name}</h3>
-                      <p className="text-sm text-slate-500">{role.code}</p>
-                    </div>
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700">
-                      {role._count.employees} employees
-                    </span>
-                  </div>
-
-                  {role.payGrade && (
-                    <div className="mt-4 p-3 bg-slate-50 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-slate-500">Pay Grade</span>
-                        <span className="text-xs font-semibold text-slate-700">{role.payGrade.name}</span>
-                      </div>
-                      <div className="space-y-1">
-                        <SalaryRow label="Min" value={role.payGrade.minSalary} />
-                        <SalaryRow label="Mid" value={role.payGrade.midSalary} highlight />
-                        <SalaryRow label="Max" value={role.payGrade.maxSalary} />
-                      </div>
-                    </div>
-                  )}
-
-                  {!role.payGrade && (
-                    <div className="mt-4 p-3 bg-amber-50 rounded-lg text-center">
-                      <p className="text-xs text-amber-700">No pay grade assigned</p>
-                    </div>
-                  )}
-
-                  <div className="mt-4 flex gap-3">
-                    <Link
-                      href={`/roles/${role.id}`}
-                      className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
-                    >
-                      Edit
-                    </Link>
-                    <Link
-                      href={`/employees?role=${role.id}`}
-                      className="text-sm font-medium text-slate-600 hover:text-slate-700"
-                    >
-                      View Employees
-                    </Link>
-                  </div>
-                </div>
-              ))}
+            <div className="card overflow-hidden">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Role
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Email
+                    </th>
+                    {currentUser?.isSuperAdmin && (
+                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                        Password
+                      </th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-slate-200">
+                  {roleUsers.map((user) => (
+                    <tr key={user.id} className="hover:bg-slate-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-sm font-medium">
+                            {user.name.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="ml-3 font-medium text-slate-900">{user.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-indigo-100 text-indigo-700">
+                          {user.systemRole?.name || user.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-slate-600">
+                        {user.email}
+                      </td>
+                      {currentUser?.isSuperAdmin && (
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {editingUserId === user.id ? (
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="password"
+                                value={editPassword}
+                                onChange={(e) => setEditPassword(e.target.value)}
+                                placeholder="New password"
+                                className="input py-1 px-2 text-sm w-32"
+                              />
+                              <button
+                                onClick={() => handleSavePassword(user.id)}
+                                disabled={savingPassword || !editPassword.trim()}
+                                className="text-sm text-emerald-600 hover:text-emerald-700 disabled:opacity-50"
+                              >
+                                {savingPassword ? 'Saving...' : 'Save'}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setEditingUserId(null)
+                                  setEditPassword('')
+                                }}
+                                className="text-sm text-slate-500 hover:text-slate-700"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="text-slate-400 font-mono">••••••••</span>
+                              <button
+                                onClick={() => setEditingUserId(user.id)}
+                                className="text-sm text-indigo-600 hover:text-indigo-700"
+                              >
+                                Edit
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         ))}
 
-        {roles.length === 0 && (
+        {users.length === 0 && (
           <div className="card p-12 text-center">
-            <BriefcaseIcon className="h-12 w-12 mx-auto text-slate-300" />
-            <h3 className="mt-4 text-lg font-medium text-slate-900">No roles defined</h3>
-            <p className="mt-2 text-slate-500">Create roles to organize your workforce structure.</p>
-            <Link href="/roles/new" className="btn-primary mt-4 inline-block">
-              Create Role
-            </Link>
+            <UsersIcon className="h-12 w-12 mx-auto text-slate-300" />
+            <h3 className="mt-4 text-lg font-medium text-slate-900">No users found</h3>
+            <p className="mt-2 text-slate-500">Add users to get started with role management.</p>
           </div>
         )}
+      </div>
+
+      {/* Add User Modal */}
+      {showAddUserModal && (
+        <AddUserModal
+          systemRoles={systemRoles}
+          onClose={() => setShowAddUserModal(false)}
+          onSuccess={() => {
+            setShowAddUserModal(false)
+            fetchData()
+          }}
+        />
+      )}
+
+      {/* Add Role Modal */}
+      {showAddRoleModal && (
+        <AddRoleModal
+          onClose={() => setShowAddRoleModal(false)}
+          onSuccess={() => {
+            setShowAddRoleModal(false)
+            fetchData()
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+// Add User Modal Component
+function AddUserModal({
+  systemRoles,
+  onClose,
+  onSuccess,
+}: {
+  systemRoles: SystemRole[]
+  onClose: () => void
+  onSuccess: () => void
+}) {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    systemRoleId: '',
+  })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(formData),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to create user')
+      }
+
+      onSuccess()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+        <h2 className="text-xl font-bold text-slate-900 mb-4">Add New User</h2>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Name *</label>
+            <input
+              type="text"
+              required
+              className="input w-full"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Email *</label>
+            <input
+              type="email"
+              required
+              className="input w-full"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Password *</label>
+            <input
+              type="password"
+              required
+              className="input w-full"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">System Role *</label>
+            <select
+              required
+              className="input w-full"
+              value={formData.systemRoleId}
+              onChange={(e) => setFormData({ ...formData, systemRoleId: e.target.value })}
+            >
+              <option value="">Select a role</option>
+              {systemRoles.map((role) => (
+                <option key={role.id} value={role.id}>
+                  {role.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button type="submit" disabled={loading} className="btn-primary flex-1">
+              {loading ? 'Creating...' : 'Create User'}
+            </button>
+            <button type="button" onClick={onClose} className="btn flex-1">
+              Cancel
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )
 }
 
-function SalaryRow({ label, value, highlight }: { label: string; value: number; highlight?: boolean }) {
+// Add Role Modal Component
+function AddRoleModal({
+  onClose,
+  onSuccess,
+}: {
+  onClose: () => void
+  onSuccess: () => void
+}) {
+  const [formData, setFormData] = useState({
+    name: '',
+    code: '',
+    description: '',
+  })
+  const [permissions, setPermissions] = useState<Record<string, { actions: string[]; scope: string }>>({})
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const resources = Object.entries(RESOURCES).map(([key, value]) => ({
+    key,
+    value,
+    label: key.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()),
+  }))
+
+  const actions = ['view', 'create', 'edit', 'delete', 'approve']
+  const scopes = [
+    { value: 'own', label: 'Own' },
+    { value: 'department', label: 'Department' },
+    { value: 'cost_center', label: 'Cost Center' },
+    { value: 'bu', label: 'Business Unit' },
+    { value: 'all', label: 'All' },
+  ]
+
+  const toggleAction = (resource: string, action: string) => {
+    setPermissions((prev) => {
+      const current = prev[resource] || { actions: [], scope: 'own' }
+      const hasAction = current.actions.includes(action)
+
+      if (hasAction) {
+        return {
+          ...prev,
+          [resource]: {
+            ...current,
+            actions: current.actions.filter((a) => a !== action),
+          },
+        }
+      } else {
+        return {
+          ...prev,
+          [resource]: {
+            ...current,
+            actions: [...current.actions, action],
+          },
+        }
+      }
+    })
+  }
+
+  const setScope = (resource: string, scope: string) => {
+    setPermissions((prev) => ({
+      ...prev,
+      [resource]: {
+        ...prev[resource] || { actions: [] },
+        scope,
+      },
+    }))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+
+    // Convert permissions to array format
+    const permissionsArray = Object.entries(permissions)
+      .filter(([_, value]) => value.actions.length > 0)
+      .map(([resource, value]) => ({
+        resource,
+        actions: value.actions,
+        scope: value.scope,
+      }))
+
+    try {
+      const res = await fetch('/api/system-roles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          ...formData,
+          permissions: permissionsArray,
+        }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to create role')
+      }
+
+      onSuccess()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
-    <div className="flex justify-between text-xs">
-      <span className="text-slate-500">{label}</span>
-      <span className={highlight ? 'font-semibold text-emerald-600' : 'text-slate-700'}>
-        {formatCurrency(value)}
-      </span>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
+      <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full mx-4 my-8 p-6">
+        <h2 className="text-xl font-bold text-slate-900 mb-4">Add New Role</h2>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Role Name *</label>
+              <input
+                type="text"
+                required
+                className="input w-full"
+                placeholder="e.g., Regional Manager"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Role Code *</label>
+              <input
+                type="text"
+                required
+                className="input w-full"
+                placeholder="e.g., REGIONAL_MANAGER"
+                value={formData.code}
+                onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase().replace(/\s+/g, '_') })}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+            <input
+              type="text"
+              className="input w-full"
+              placeholder="Brief description of this role"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-3">Permissions</label>
+            <div className="border rounded-lg overflow-hidden">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase">Resource</th>
+                    {actions.map((action) => (
+                      <th key={action} className="px-2 py-2 text-center text-xs font-medium text-slate-500 uppercase">
+                        {action}
+                      </th>
+                    ))}
+                    <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase">Scope</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-slate-200">
+                  {resources.map(({ key, value, label }) => (
+                    <tr key={key} className="hover:bg-slate-50">
+                      <td className="px-4 py-2 text-sm text-slate-700">{label}</td>
+                      {actions.map((action) => (
+                        <td key={action} className="px-2 py-2 text-center">
+                          <input
+                            type="checkbox"
+                            checked={permissions[value]?.actions.includes(action) || false}
+                            onChange={() => toggleAction(value, action)}
+                            className="h-4 w-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                          />
+                        </td>
+                      ))}
+                      <td className="px-4 py-2">
+                        <select
+                          value={permissions[value]?.scope || 'own'}
+                          onChange={(e) => setScope(value, e.target.value)}
+                          className="input py-1 px-2 text-sm"
+                          disabled={!permissions[value]?.actions.length}
+                        >
+                          {scopes.map((scope) => (
+                            <option key={scope.value} value={scope.value}>
+                              {scope.label}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button type="submit" disabled={loading} className="btn-primary flex-1">
+              {loading ? 'Creating...' : 'Create Role'}
+            </button>
+            <button type="button" onClick={onClose} className="btn flex-1">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }
 
-function BuildingIcon({ className }: { className?: string }) {
+// Icons
+function ShieldIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
     </svg>
   )
 }
 
-function BriefcaseIcon({ className }: { className?: string }) {
+function UsersIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
     </svg>
   )
 }
