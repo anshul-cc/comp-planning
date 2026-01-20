@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { signOut } from 'next-auth/react'
 import { cn } from '@/lib/utils'
 
 const navigation = [
@@ -51,73 +50,49 @@ export function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <div className="flex h-full w-72 flex-col bg-gradient-to-b from-slate-900 via-slate-900 to-emerald-950">
-      <div className="flex h-20 items-center gap-3 px-6 border-b border-white/10">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 shadow-lg shadow-emerald-500/30">
-          <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+    <div className="flex h-full w-56 flex-col bg-gradient-to-b from-slate-900 via-slate-900 to-emerald-950">
+      <div className="flex h-12 items-center gap-2 px-3 border-b border-white/10">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500">
+          <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <div>
-          <h1 className="text-lg font-bold text-white">CompPilot</h1>
-          <p className="text-xs text-slate-400">Compensation & Budgeting</p>
-        </div>
+        <span className="text-sm font-bold text-white">CompPilot</span>
       </div>
 
-      <nav className="flex-1 overflow-y-auto p-4">
-        {navigation.map((group) => (
-          <div key={group.name} className="mb-6">
-            <p className="px-3 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              {group.name}
-            </p>
-            <div className="space-y-1">
-              {group.items.map((item) => {
-                // Match exact path or nested paths (e.g., /cycles/new should highlight /cycles)
-                const isActive = item.href === '/'
-                  ? pathname === '/'
-                  : pathname === item.href || pathname.startsWith(item.href + '/')
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={cn(
-                      'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
-                      isActive
-                        ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-white'
-                        : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                    )}
-                  >
-                    <item.icon className={cn('h-5 w-5', isActive && 'text-emerald-400')} />
-                    {item.name}
-                  </Link>
-                )
-              })}
+      <nav className="flex-1 flex flex-col justify-between px-2 py-3">
+        <div className="space-y-4">
+          {navigation.map((group) => (
+            <div key={group.name}>
+              <p className="px-2 mb-1 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                {group.name}
+              </p>
+              <div className="space-y-0.5">
+                {group.items.map((item) => {
+                  const isActive = item.href === '/'
+                    ? pathname === '/'
+                    : pathname === item.href || pathname.startsWith(item.href + '/')
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={cn(
+                        'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-all duration-200',
+                        isActive
+                          ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-white'
+                          : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                      )}
+                    >
+                      <item.icon className={cn('h-4 w-4 flex-shrink-0', isActive && 'text-emerald-400')} />
+                      <span className="truncate">{item.name}</span>
+                    </Link>
+                  )
+                })}
+              </div>
             </div>
-          </div>
-        ))}
-      </nav>
-
-      <div className="p-4 m-4 rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-white/5">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white font-semibold text-sm">
-            A
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white truncate">Admin User</p>
-            <p className="text-xs text-slate-400 truncate">admin@example.com</p>
-          </div>
+          ))}
         </div>
-      </div>
-
-      <div className="border-t border-white/10 p-4">
-        <button
-          onClick={() => signOut({ callbackUrl: '/login' })}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-all duration-200"
-        >
-          <LogoutIcon className="h-5 w-5" />
-          Sign out
-        </button>
-      </div>
+      </nav>
     </div>
   )
 }
@@ -206,14 +181,6 @@ function ReceiptIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0c1.1.128 1.907 1.077 1.907 2.185zM9.75 9h.008v.008H9.75V9zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm4.125 4.5h.008v.008h-.008V13.5zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-    </svg>
-  )
-}
-
-function LogoutIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
     </svg>
   )
 }

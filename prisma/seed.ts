@@ -460,32 +460,32 @@ async function main() {
     prisma.payGrade.upsert({
       where: { level: 1 },
       update: {},
-      create: { name: 'Entry Level', level: 1, minSalary: 40000, midSalary: 50000, maxSalary: 60000 },
+      create: { name: 'Entry Level', code: 'PG-1', level: 1, minSalary: 40000, midSalary: 50000, maxSalary: 60000 },
     }),
     prisma.payGrade.upsert({
       where: { level: 2 },
       update: {},
-      create: { name: 'Associate', level: 2, minSalary: 55000, midSalary: 70000, maxSalary: 85000 },
+      create: { name: 'Associate', code: 'PG-2', level: 2, minSalary: 55000, midSalary: 70000, maxSalary: 85000 },
     }),
     prisma.payGrade.upsert({
       where: { level: 3 },
       update: {},
-      create: { name: 'Senior', level: 3, minSalary: 80000, midSalary: 100000, maxSalary: 120000 },
+      create: { name: 'Senior', code: 'PG-3', level: 3, minSalary: 80000, midSalary: 100000, maxSalary: 120000 },
     }),
     prisma.payGrade.upsert({
       where: { level: 4 },
       update: {},
-      create: { name: 'Lead', level: 4, minSalary: 110000, midSalary: 135000, maxSalary: 160000 },
+      create: { name: 'Lead', code: 'PG-4', level: 4, minSalary: 110000, midSalary: 135000, maxSalary: 160000 },
     }),
     prisma.payGrade.upsert({
       where: { level: 5 },
       update: {},
-      create: { name: 'Manager', level: 5, minSalary: 140000, midSalary: 170000, maxSalary: 200000 },
+      create: { name: 'Manager', code: 'PG-5', level: 5, minSalary: 140000, midSalary: 170000, maxSalary: 200000 },
     }),
     prisma.payGrade.upsert({
       where: { level: 6 },
       update: {},
-      create: { name: 'Director', level: 6, minSalary: 180000, midSalary: 220000, maxSalary: 260000 },
+      create: { name: 'Director', code: 'PG-6', level: 6, minSalary: 180000, midSalary: 220000, maxSalary: 260000 },
     }),
   ])
 
