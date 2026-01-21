@@ -22,6 +22,16 @@ interface User {
     name: string
     code: string
   } | null
+  managedBusinessUnits: Array<{
+    id: string
+    name: string
+    code: string
+  }>
+  managedDepartments: Array<{
+    id: string
+    name: string
+    code: string
+  }>
 }
 
 interface CurrentUser {
@@ -41,9 +51,12 @@ export default function RolesPage() {
   // Modal states
   const [showAddUserModal, setShowAddUserModal] = useState(false)
   const [showAddRoleModal, setShowAddRoleModal] = useState(false)
-  const [editingUserId, setEditingUserId] = useState<string | null>(null)
+  const [editingPasswordUserId, setEditingPasswordUserId] = useState<string | null>(null)
   const [editPassword, setEditPassword] = useState('')
   const [savingPassword, setSavingPassword] = useState(false)
+  const [editingEmailUserId, setEditingEmailUserId] = useState<string | null>(null)
+  const [editEmail, setEditEmail] = useState('')
+  const [savingEmail, setSavingEmail] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -94,12 +107,39 @@ export default function RolesPage() {
         throw new Error(data.error || 'Failed to update password')
       }
 
-      setEditingUserId(null)
+      setEditingPasswordUserId(null)
       setEditPassword('')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update password')
     } finally {
       setSavingPassword(false)
+    }
+  }
+
+  const handleSaveEmail = async (userId: string) => {
+    if (!editEmail.trim()) return
+
+    setSavingEmail(true)
+    try {
+      const res = await fetch(`/api/users/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email: editEmail }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to update email')
+      }
+
+      setEditingEmailUserId(null)
+      setEditEmail('')
+      fetchData() // Refresh to show updated email
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update email')
+    } finally {
+      setSavingEmail(false)
     }
   }
 
@@ -182,6 +222,9 @@ export default function RolesPage() {
                       Role
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      BU / Department
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                       Email
                     </th>
                     {currentUser?.isSuperAdmin && (
@@ -208,11 +251,69 @@ export default function RolesPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-slate-600">
-                        {user.email}
+                        <div className="flex flex-wrap gap-1">
+                          {user.managedBusinessUnits.map((bu) => (
+                            <span key={bu.id} className="px-2 py-0.5 text-xs font-medium rounded bg-blue-100 text-blue-700">
+                              BU: {bu.name}
+                            </span>
+                          ))}
+                          {user.managedDepartments.map((dept) => (
+                            <span key={dept.id} className="px-2 py-0.5 text-xs font-medium rounded bg-green-100 text-green-700">
+                              Dept: {dept.name}
+                            </span>
+                          ))}
+                          {user.managedBusinessUnits.length === 0 && user.managedDepartments.length === 0 && (
+                            <span className="text-slate-400 text-sm">-</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-slate-600">
+                        {currentUser?.isSuperAdmin && editingEmailUserId === user.id ? (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="email"
+                              value={editEmail}
+                              onChange={(e) => setEditEmail(e.target.value)}
+                              placeholder="Email address"
+                              className="input py-1 px-2 text-sm w-48"
+                            />
+                            <button
+                              onClick={() => handleSaveEmail(user.id)}
+                              disabled={savingEmail || !editEmail.trim()}
+                              className="text-sm text-emerald-600 hover:text-emerald-700 disabled:opacity-50"
+                            >
+                              {savingEmail ? 'Saving...' : 'Save'}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingEmailUserId(null)
+                                setEditEmail('')
+                              }}
+                              className="text-sm text-slate-500 hover:text-slate-700"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span>{user.email}</span>
+                            {currentUser?.isSuperAdmin && (
+                              <button
+                                onClick={() => {
+                                  setEditingEmailUserId(user.id)
+                                  setEditEmail(user.email)
+                                }}
+                                className="text-sm text-indigo-600 hover:text-indigo-700"
+                              >
+                                Edit
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </td>
                       {currentUser?.isSuperAdmin && (
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {editingUserId === user.id ? (
+                          {editingPasswordUserId === user.id ? (
                             <div className="flex items-center gap-2">
                               <input
                                 type="password"
@@ -230,7 +331,7 @@ export default function RolesPage() {
                               </button>
                               <button
                                 onClick={() => {
-                                  setEditingUserId(null)
+                                  setEditingPasswordUserId(null)
                                   setEditPassword('')
                                 }}
                                 className="text-sm text-slate-500 hover:text-slate-700"
@@ -242,7 +343,7 @@ export default function RolesPage() {
                             <div className="flex items-center gap-2">
                               <span className="text-slate-400 font-mono">••••••••</span>
                               <button
-                                onClick={() => setEditingUserId(user.id)}
+                                onClick={() => setEditingPasswordUserId(user.id)}
                                 className="text-sm text-indigo-600 hover:text-indigo-700"
                               >
                                 Edit

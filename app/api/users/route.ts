@@ -24,6 +24,20 @@ export async function GET(request: NextRequest) {
           code: true,
         },
       },
+      managedBusinessUnits: {
+        select: {
+          id: true,
+          name: true,
+          code: true,
+        },
+      },
+      managedDepartments: {
+        select: {
+          id: true,
+          name: true,
+          code: true,
+        },
+      },
       createdAt: true,
     },
     orderBy: { name: 'asc' },
