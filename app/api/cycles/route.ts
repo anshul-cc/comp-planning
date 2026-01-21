@@ -88,36 +88,53 @@ export async function POST(request: NextRequest) {
       }
     : undefined;
 
-  const cycle = await prisma.planningCycle.create({
-    data: {
-      name,
-      type,
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
-      totalBudget: totalBudget ? parseFloat(totalBudget) : 0,
-      status: 'DRAFT',
-      autoApproveIfMissing,
-      skipApproverEmails,
-      createdById: user.id,
-      approvalChainLevels: approvalChainData,
-    },
-    include: {
-      budgetAllocations: true,
-      headcountPlans: true,
-      approvalChainLevels: {
-        include: {
-          assignees: {
-            include: {
-              user: {
-                select: { id: true, name: true, email: true },
+  try {
+    // Verify user exists if id is provided
+    let createdById = null;
+    if (user.id) {
+      const existingUser = await prisma.user.findUnique({ where: { id: user.id } });
+      if (existingUser) {
+        createdById = user.id;
+      }
+    }
+
+    const cycle = await prisma.planningCycle.create({
+      data: {
+        name,
+        type,
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        totalBudget: totalBudget ? parseFloat(totalBudget) : 0,
+        status: 'DRAFT',
+        autoApproveIfMissing,
+        skipApproverEmails,
+        createdById,
+        approvalChainLevels: approvalChainData,
+      },
+      include: {
+        budgetAllocations: true,
+        headcountPlans: true,
+        approvalChainLevels: {
+          include: {
+            assignees: {
+              include: {
+                user: {
+                  select: { id: true, name: true, email: true },
+                },
               },
             },
           },
+          orderBy: { level: 'asc' },
         },
-        orderBy: { level: 'asc' },
       },
-    },
-  });
+    });
 
-  return NextResponse.json(cycle, { status: 201 });
+    return NextResponse.json(cycle, { status: 201 });
+  } catch (error) {
+    console.error('Error creating cycle:', error);
+    return NextResponse.json(
+      { error: 'Failed to create cycle' },
+      { status: 500 }
+    );
+  }
 }
