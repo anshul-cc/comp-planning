@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { SYSTEM_ROLES } from '@/lib/permissions'
 
+// Prevent static generation - only run on request
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   const logs: string[] = []
   const log = (msg: string) => {
