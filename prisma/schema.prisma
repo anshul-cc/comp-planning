@@ -33,6 +33,7 @@ model User {
   hiringProposals      HiringProposal[]
   compensationActions  CompensationAction[]
   createdCycles        PlanningCycle[]      @relation("CycleCreator")
+  approvalAssignments  ApprovalChainAssignee[]
 }
 
 // ============================================
@@ -146,10 +147,9 @@ model PlanningCycle {
   status      String   @default("DRAFT") // DRAFT, ALLOCATION, REVIEW, APPROVED, ACTIVE, CLOSED
   createdById String?
 
-  // Configurable approval workflow
-  requireDeptApproval Boolean @default(true)
-  requireBUApproval   Boolean @default(true)
-  requireFinalApproval Boolean @default(true)
+  // Configurable approval workflow options
+  autoApproveIfMissing Boolean @default(false) // Auto-approve if approver is missing
+  skipApproverEmails   Boolean @default(false) // Do not email approvers for every request
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -160,6 +160,7 @@ model PlanningCycle {
   hiringProposals     HiringProposal[]
   compensationCycles  CompensationCycle[]
   expenses            Expense[]
+  approvalChainLevels ApprovalChainLevel[]
 }
 
 // ============================================
@@ -451,6 +452,48 @@ model Approval {
   headcountPlan      HeadcountPlan?      @relation(fields: [headcountPlanId], references: [id])
   hiringProposal     HiringProposal?     @relation(fields: [hiringProposalId], references: [id])
   compensationAction CompensationAction? @relation(fields: [compensationActionId], references: [id])
+}
+
+// ============================================
+// APPROVAL CHAIN CONFIGURATION
+// ============================================
+
+// Approval Chain Level - defines each level in an approval chain for a planning cycle
+model ApprovalChainLevel {
+  id        String   @id @default(cuid())
+  cycleId   String
+  level     Int      // 1, 2, 3, etc.
+  name      String?  // Optional name like "Department Review", "BU Approval"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cycle     PlanningCycle           @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  assignees ApprovalChainAssignee[]
+
+  @@unique([cycleId, level])
+  @@index([cycleId])
+}
+
+// Approval Chain Assignee - who can approve at each level
+model ApprovalChainAssignee {
+  id           String   @id @default(cuid())
+  chainLevelId String
+
+  // Assignment type - either a role or a specific user
+  assigneeType String   // "ROLE" or "USER"
+
+  // If assigneeType is "ROLE" - use this
+  roleType     String?  // "REPORTING_MANAGER", "DEPARTMENT_HEAD", "BU_LEADER", "HR_ADMIN", "COMPENSATION_MANAGER"
+
+  // If assigneeType is "USER" - use this
+  userId       String?
+
+  createdAt    DateTime @default(now())
+
+  chainLevel   ApprovalChainLevel @relation(fields: [chainLevelId], references: [id], onDelete: Cascade)
+  user         User?              @relation(fields: [userId], references: [id])
+
+  @@index([chainLevelId])
 }
 
 // ============================================

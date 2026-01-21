@@ -19,6 +19,18 @@ export async function GET(request: NextRequest) {
     include: {
       budgetAllocations: true,
       headcountPlans: true,
+      approvalChainLevels: {
+        include: {
+          assignees: {
+            include: {
+              user: {
+                select: { id: true, name: true, email: true },
+              },
+            },
+          },
+        },
+        orderBy: { level: 'asc' },
+      },
       _count: {
         select: {
           budgetAllocations: true,
@@ -45,9 +57,9 @@ export async function POST(request: NextRequest) {
     startDate,
     endDate,
     totalBudget,
-    requireDeptApproval = true,
-    requireBUApproval = true,
-    requireFinalApproval = true,
+    autoApproveIfMissing = false,
+    skipApproverEmails = false,
+    approvalLevels = [],
   } = body;
 
   if (!name || !type || !startDate || !endDate) {
@@ -59,6 +71,23 @@ export async function POST(request: NextRequest) {
 
   const user = session.user as { id?: string };
 
+  // Build approval chain levels data for nested create
+  const approvalChainData = approvalLevels.length > 0
+    ? {
+        create: approvalLevels.map((level: { level: number; name?: string; assignees: Array<{ assigneeType: string; roleType?: string; userId?: string }> }, index: number) => ({
+          level: index + 1,
+          name: level.name || null,
+          assignees: {
+            create: level.assignees.map((assignee: { assigneeType: string; roleType?: string; userId?: string }) => ({
+              assigneeType: assignee.assigneeType,
+              roleType: assignee.roleType || null,
+              userId: assignee.userId || null,
+            })),
+          },
+        })),
+      }
+    : undefined;
+
   const cycle = await prisma.planningCycle.create({
     data: {
       name,
@@ -67,14 +96,26 @@ export async function POST(request: NextRequest) {
       endDate: new Date(endDate),
       totalBudget: totalBudget ? parseFloat(totalBudget) : 0,
       status: 'DRAFT',
-      requireDeptApproval,
-      requireBUApproval,
-      requireFinalApproval,
+      autoApproveIfMissing,
+      skipApproverEmails,
       createdById: user.id,
+      approvalChainLevels: approvalChainData,
     },
     include: {
       budgetAllocations: true,
       headcountPlans: true,
+      approvalChainLevels: {
+        include: {
+          assignees: {
+            include: {
+              user: {
+                select: { id: true, name: true, email: true },
+              },
+            },
+          },
+        },
+        orderBy: { level: 'asc' },
+      },
     },
   });
 

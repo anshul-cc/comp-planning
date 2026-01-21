@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { ApprovalChainBuilder, ApprovalChainLevel } from '@/components/ApprovalChainBuilder'
 
@@ -11,11 +11,40 @@ interface User {
   email: string
 }
 
-export default function NewCyclePage() {
+interface CycleData {
+  id: string
+  name: string
+  type: string
+  startDate: string
+  endDate: string
+  totalBudget: number
+  status: string
+  autoApproveIfMissing: boolean
+  skipApproverEmails: boolean
+  approvalChainLevels: Array<{
+    id: string
+    level: number
+    name?: string
+    assignees: Array<{
+      id: string
+      assigneeType: string
+      roleType?: string
+      userId?: string
+      user?: { id: string; name: string; email: string }
+    }>
+  }>
+}
+
+export default function EditCyclePage() {
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
+  const params = useParams()
+  const cycleId = params.id as string
+
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [users, setUsers] = useState<User[]>([])
+  const [cycle, setCycle] = useState<CycleData | null>(null)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -27,21 +56,70 @@ export default function NewCyclePage() {
     skipApproverEmails: false,
   })
 
-  const [approvalLevels, setApprovalLevels] = useState<ApprovalChainLevel[]>([
-    { level: 1, assignees: [{ assigneeType: 'ROLE', roleType: 'DEPARTMENT_HEAD' }] },
-  ])
+  const [approvalLevels, setApprovalLevels] = useState<ApprovalChainLevel[]>([])
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false)
 
   useEffect(() => {
+    // Fetch cycle data
+    fetch(`/api/cycles/${cycleId}`)
+      .then((res) => {
+        if (!res.ok) throw new Error('Cycle not found')
+        return res.json()
+      })
+      .then((data: CycleData) => {
+        setCycle(data)
+
+        // Check if cycle can be edited
+        if (data.status !== 'DRAFT') {
+          setError('Only cycles in DRAFT status can be edited')
+          setLoading(false)
+          return
+        }
+
+        // Populate form data
+        setFormData({
+          name: data.name,
+          type: data.type,
+          startDate: data.startDate.split('T')[0],
+          endDate: data.endDate.split('T')[0],
+          totalBudget: data.totalBudget.toString(),
+          autoApproveIfMissing: data.autoApproveIfMissing,
+          skipApproverEmails: data.skipApproverEmails,
+        })
+
+        // Populate approval levels
+        const levels: ApprovalChainLevel[] = data.approvalChainLevels.map((level) => ({
+          id: level.id,
+          level: level.level,
+          name: level.name,
+          assignees: level.assignees.map((a) => ({
+            id: a.id,
+            assigneeType: a.assigneeType as 'ROLE' | 'USER',
+            roleType: a.roleType,
+            userId: a.userId,
+            userName: a.user?.name,
+          })),
+        }))
+        setApprovalLevels(levels.length > 0 ? levels : [{ level: 1, assignees: [] }])
+
+        setLoading(false)
+        setInitialLoadComplete(true)
+      })
+      .catch((err) => {
+        setError(err.message)
+        setLoading(false)
+      })
+
     // Fetch users for the assignee selector
     fetch('/api/users')
       .then((res) => res.json())
       .then((data) => setUsers(Array.isArray(data) ? data : []))
       .catch(() => setUsers([]))
-  }, [])
+  }, [cycleId])
 
-  // Auto-calculate end date based on cycle type and start date
+  // Auto-calculate end date based on cycle type and start date (only after initial load)
   useEffect(() => {
-    if (!formData.startDate) return
+    if (!initialLoadComplete || !formData.startDate) return
 
     const startDate = new Date(formData.startDate)
     let endDate: Date
@@ -68,16 +146,16 @@ export default function NewCyclePage() {
 
     const formattedEndDate = endDate.toISOString().split('T')[0]
     setFormData((prev) => ({ ...prev, endDate: formattedEndDate }))
-  }, [formData.startDate, formData.type])
+  }, [formData.startDate, formData.type, initialLoadComplete])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
+    setSaving(true)
     setError(null)
 
     try {
-      const res = await fetch('/api/cycles', {
-        method: 'POST',
+      const res = await fetch(`/api/cycles/${cycleId}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
@@ -87,30 +165,68 @@ export default function NewCyclePage() {
 
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || 'Failed to create cycle')
+        throw new Error(data.error || 'Failed to update cycle')
       }
 
-      router.push('/cycles')
+      router.push(`/cycles/${cycleId}`)
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
-      setLoading(false)
+      setSaving(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="card p-6 text-center">
+          <p className="text-slate-500">Loading cycle...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error && !cycle) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="card p-6">
+          <div className="text-red-600 mb-4">{error}</div>
+          <Link href="/cycles" className="btn">
+            Back to Cycles
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  if (cycle?.status !== 'DRAFT') {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="card p-6">
+          <div className="text-amber-600 mb-4">
+            This cycle is in {cycle?.status} status and cannot be edited.
+          </div>
+          <Link href={`/cycles/${cycleId}`} className="btn">
+            View Cycle
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-8">
         <Link
-          href="/cycles"
+          href={`/cycles/${cycleId}`}
           className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1"
         >
           <ArrowLeftIcon className="h-4 w-4" />
-          Back to Cycles
+          Back to Cycle
         </Link>
-        <h1 className="mt-4 text-3xl font-bold text-slate-900">New Planning Cycle</h1>
-        <p className="mt-1 text-slate-500">Create a new budget planning cycle</p>
+        <h1 className="mt-4 text-3xl font-bold text-slate-900">Edit Planning Cycle</h1>
+        <p className="mt-1 text-slate-500">Update cycle details and approval workflow</p>
       </div>
 
       {error && (
@@ -237,12 +353,12 @@ export default function NewCyclePage() {
         <div className="flex gap-3 pt-4">
           <button
             type="submit"
-            disabled={loading}
+            disabled={saving}
             className="btn-primary flex-1"
           >
-            {loading ? 'Creating...' : 'Create Cycle'}
+            {saving ? 'Saving...' : 'Save Changes'}
           </button>
-          <Link href="/cycles" className="btn flex-1 text-center">
+          <Link href={`/cycles/${cycleId}`} className="btn flex-1 text-center">
             Cancel
           </Link>
         </div>

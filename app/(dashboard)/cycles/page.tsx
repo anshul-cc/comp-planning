@@ -73,6 +73,17 @@ export default async function CyclesPage() {
               >
                 View Details
               </Link>
+              {cycle.status === 'DRAFT' && (
+                <>
+                  <span className="text-slate-300">|</span>
+                  <Link
+                    href={`/cycles/${cycle.id}/edit`}
+                    className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
+                  >
+                    Edit
+                  </Link>
+                </>
+              )}
               <span className="text-slate-300">|</span>
               <Link
                 href={`/budgets?cycle=${cycle.id}`}
