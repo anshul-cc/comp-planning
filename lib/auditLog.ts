@@ -3,7 +3,7 @@
  * Tracks all changes for compliance and traceability
  */
 
-import prisma from './prisma';
+import { prisma } from './prisma';
 
 export type AuditEntityType =
   | 'org_unit'
