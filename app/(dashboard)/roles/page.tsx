@@ -80,8 +80,9 @@ export default function RolesPage() {
         meRes.json(),
       ])
 
-      setUsers(usersData)
-      setSystemRoles(rolesData)
+      // Handle paginated responses
+      setUsers(Array.isArray(usersData) ? usersData : usersData.data || [])
+      setSystemRoles(Array.isArray(rolesData) ? rolesData : rolesData.data || [])
       setCurrentUser(meData)
     } catch (err) {
       setError('Failed to load data. Please refresh the page.')

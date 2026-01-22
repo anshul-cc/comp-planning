@@ -40,7 +40,8 @@ export default function DepartmentsPage() {
   const fetchDepartments = async () => {
     const res = await fetch('/api/departments')
     const data = await res.json()
-    setDepartments(data)
+    // Handle paginated response
+    setDepartments(Array.isArray(data) ? data : data.data || [])
     setLoading(false)
   }
 
@@ -48,7 +49,8 @@ export default function DepartmentsPage() {
     const res = await fetch('/api/cost-centers')
     if (res.ok) {
       const data = await res.json()
-      setCostCenters(data)
+      // Handle paginated response
+      setCostCenters(Array.isArray(data) ? data : data.data || [])
     }
   }
 
