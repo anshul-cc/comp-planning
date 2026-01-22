@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
 interface Approval {
@@ -48,11 +48,7 @@ export default function ApprovalsPage() {
   const [statusFilter, setStatusFilter] = useState('PENDING')
   const [typeFilter, setTypeFilter] = useState('')
 
-  useEffect(() => {
-    fetchApprovals()
-  }, [statusFilter, typeFilter])
-
-  const fetchApprovals = async () => {
+  const fetchApprovals = useCallback(async () => {
     setLoading(true)
     setError(null)
 
@@ -76,9 +72,13 @@ export default function ApprovalsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [statusFilter, typeFilter])
 
-  const handleApprove = async (id: string) => {
+  useEffect(() => {
+    fetchApprovals()
+  }, [fetchApprovals])
+
+  const handleApprove = useCallback(async (id: string) => {
     const comments = prompt('Add approval comments (optional):')
 
     try {
@@ -95,12 +95,12 @@ export default function ApprovalsPage() {
         const data = await res.json()
         alert(data.error || 'Failed to approve')
       }
-    } catch (err) {
+    } catch {
       alert('Failed to approve')
     }
-  }
+  }, [fetchApprovals])
 
-  const handleReject = async (id: string) => {
+  const handleReject = useCallback(async (id: string) => {
     const comments = prompt('Add rejection reason (required):')
     if (!comments) {
       alert('Rejection reason is required')
@@ -121,12 +121,12 @@ export default function ApprovalsPage() {
         const data = await res.json()
         alert(data.error || 'Failed to reject')
       }
-    } catch (err) {
+    } catch {
       alert('Failed to reject')
     }
-  }
+  }, [fetchApprovals])
 
-  const handleRequestRevision = async (id: string) => {
+  const handleRequestRevision = useCallback(async (id: string) => {
     const comments = prompt('Add revision request details (required):')
     if (!comments) {
       alert('Revision details are required')
@@ -147,10 +147,10 @@ export default function ApprovalsPage() {
         const data = await res.json()
         alert(data.error || 'Failed to request revision')
       }
-    } catch (err) {
+    } catch {
       alert('Failed to request revision')
     }
-  }
+  }, [fetchApprovals])
 
   if (loading) {
     return (

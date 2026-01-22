@@ -3,22 +3,31 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const payGrades = await prisma.payGrade.findMany({
-    include: {
-      _count: {
-        select: { employees: true },
-      },
-    },
-    orderBy: { level: 'asc' },
-  })
+  const searchParams = request.nextUrl.searchParams
+  const limit = parseInt(searchParams.get('limit') || '25')
+  const offset = parseInt(searchParams.get('offset') || '0')
 
-  return NextResponse.json(payGrades)
+  const [payGrades, total] = await Promise.all([
+    prisma.payGrade.findMany({
+      include: {
+        _count: {
+          select: { employees: true },
+        },
+      },
+      orderBy: { level: 'asc' },
+      take: limit,
+      skip: offset,
+    }),
+    prisma.payGrade.count(),
+  ])
+
+  return NextResponse.json({ data: payGrades, total, limit, offset })
 }
 
 export async function POST(request: NextRequest) {

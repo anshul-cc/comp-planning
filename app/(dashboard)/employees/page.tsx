@@ -1,7 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { formatCurrency, formatDate } from '@/lib/utils'
+
+const INITIAL_FORM = {
+  employeeId: '',
+  name: '',
+  email: '',
+  title: '',
+  departmentId: '',
+  currentSalary: '',
+  hireDate: '',
+}
 
 interface Department {
   id: string
@@ -29,34 +39,28 @@ export default function EmployeesPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [filter, setFilter] = useState('')
-  const [form, setForm] = useState({
-    employeeId: '',
-    name: '',
-    email: '',
-    title: '',
-    departmentId: '',
-    currentSalary: '',
-    hireDate: '',
-  })
+  const [form, setForm] = useState(INITIAL_FORM)
+
+  const fetchEmployees = useCallback(async () => {
+    const res = await fetch('/api/employees')
+    const data = await res.json()
+    // Handle paginated response
+    setEmployees(Array.isArray(data) ? data : data.data || [])
+  }, [])
 
   useEffect(() => {
     Promise.all([
       fetch('/api/employees').then((r) => r.json()),
       fetch('/api/departments').then((r) => r.json()),
     ]).then(([emp, dept]) => {
-      setEmployees(emp)
-      setDepartments(dept)
+      // Handle paginated responses
+      setEmployees(Array.isArray(emp) ? emp : emp.data || [])
+      setDepartments(Array.isArray(dept) ? dept : dept.data || [])
       setLoading(false)
     })
   }, [])
 
-  const fetchEmployees = async () => {
-    const res = await fetch('/api/employees')
-    const data = await res.json()
-    setEmployees(data)
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     const method = editingId ? 'PUT' : 'POST'
     const url = editingId ? `/api/employees/${editingId}` : '/api/employees'
@@ -70,23 +74,15 @@ export default function EmployeesPage() {
     if (res.ok) {
       setShowForm(false)
       setEditingId(null)
-      setForm({
-        employeeId: '',
-        name: '',
-        email: '',
-        title: '',
-        departmentId: '',
-        currentSalary: '',
-        hireDate: '',
-      })
+      setForm(INITIAL_FORM)
       fetchEmployees()
     } else {
       const data = await res.json()
       alert(data.error)
     }
-  }
+  }, [editingId, form, fetchEmployees])
 
-  const handleEdit = (emp: Employee) => {
+  const handleEdit = useCallback((emp: Employee) => {
     setForm({
       employeeId: emp.employeeId,
       name: emp.name,
@@ -98,16 +94,22 @@ export default function EmployeesPage() {
     })
     setEditingId(emp.id)
     setShowForm(true)
-  }
+  }, [])
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     if (!confirm('Are you sure you want to delete this employee?')) return
 
     const res = await fetch(`/api/employees/${id}`, { method: 'DELETE' })
     if (res.ok) {
       fetchEmployees()
     }
-  }
+  }, [fetchEmployees])
+
+  const handleAddNew = useCallback(() => {
+    setShowForm(true)
+    setEditingId(null)
+    setForm(INITIAL_FORM)
+  }, [])
 
   const filteredEmployees = filter
     ? employees.filter((e) => e.departmentId === filter)
@@ -126,22 +128,7 @@ export default function EmployeesPage() {
             {employees.length} total employees
           </p>
         </div>
-        <button
-          onClick={() => {
-            setShowForm(true)
-            setEditingId(null)
-            setForm({
-              employeeId: '',
-              name: '',
-              email: '',
-              title: '',
-              departmentId: '',
-              currentSalary: '',
-              hireDate: '',
-            })
-          }}
-          className="btn-primary"
-        >
+        <button onClick={handleAddNew} className="btn-primary">
           Add Employee
         </button>
       </div>

@@ -14,34 +14,41 @@ export async function GET(request: NextRequest) {
 
   const where = status ? { status } : {};
 
-  const cycles = await prisma.planningCycle.findMany({
-    where,
-    include: {
-      budgetAllocations: true,
-      headcountPlans: true,
-      approvalChainLevels: {
-        include: {
-          assignees: {
-            include: {
-              user: {
-                select: { id: true, name: true, email: true },
+  const limit = parseInt(searchParams.get('limit') || '25');
+  const offset = parseInt(searchParams.get('offset') || '0');
+
+  const [cycles, total] = await Promise.all([
+    prisma.planningCycle.findMany({
+      where,
+      include: {
+        // Removed full budgetAllocations and headcountPlans - use _count instead
+        approvalChainLevels: {
+          include: {
+            assignees: {
+              include: {
+                user: {
+                  select: { id: true, name: true, email: true },
+                },
               },
             },
           },
+          orderBy: { level: 'asc' },
         },
-        orderBy: { level: 'asc' },
-      },
-      _count: {
-        select: {
-          budgetAllocations: true,
-          headcountPlans: true,
+        _count: {
+          select: {
+            budgetAllocations: true,
+            headcountPlans: true,
+          },
         },
       },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
+    }),
+    prisma.planningCycle.count({ where }),
+  ]);
 
-  return NextResponse.json(cycles);
+  return NextResponse.json({ data: cycles, total, limit, offset });
 }
 
 export async function POST(request: NextRequest) {

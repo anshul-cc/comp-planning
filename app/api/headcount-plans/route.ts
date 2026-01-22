@@ -12,13 +12,15 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const cycleId = searchParams.get('cycleId');
   const departmentId = searchParams.get('departmentId');
+  const limit = parseInt(searchParams.get('limit') || '25');
+  const offset = parseInt(searchParams.get('offset') || '0');
 
   const where: Record<string, unknown> = {};
   if (cycleId) where.cycleId = cycleId;
   if (departmentId) where.departmentId = departmentId;
 
-  // Fetch headcount plans and department stats in parallel (fixes N+1 query)
-  const [headcountPlans, deptStats] = await Promise.all([
+  // Fetch headcount plans, count, and department stats in parallel
+  const [headcountPlans, total, deptStats] = await Promise.all([
     prisma.headcountPlan.findMany({
       where,
       include: {
@@ -32,7 +34,10 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
     }),
+    prisma.headcountPlan.count({ where }),
     // Single query to get all department stats instead of N queries
     prisma.employee.groupBy({
       by: ['departmentId'],
@@ -69,7 +74,7 @@ export async function GET(request: NextRequest) {
     };
   });
 
-  return NextResponse.json(plansWithActuals);
+  return NextResponse.json({ data: plansWithActuals, total, limit, offset });
 }
 
 export async function POST(request: NextRequest) {

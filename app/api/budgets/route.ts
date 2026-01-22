@@ -19,26 +19,30 @@ export async function GET(request: NextRequest) {
   if (departmentId) where.departmentId = departmentId;
   if (status) where.status = status;
 
-  const allocations = await prisma.budgetAllocation.findMany({
-    where,
-    include: {
-      cycle: true,
-      department: true,
-      costCenter: true,
-      businessUnit: true,
-      approvals: {
-        include: {
-          approver: {
-            select: { id: true, name: true, email: true },
-          },
+  const limit = parseInt(searchParams.get('limit') || '25');
+  const offset = parseInt(searchParams.get('offset') || '0');
+
+  const [allocations, total] = await Promise.all([
+    prisma.budgetAllocation.findMany({
+      where,
+      include: {
+        cycle: true,
+        department: true,
+        costCenter: true,
+        businessUnit: true,
+        // Moved approvals and comments to detail view to reduce overfetching
+        _count: {
+          select: { approvals: true, comments: true },
         },
       },
-      comments: true,
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
+    }),
+    prisma.budgetAllocation.count({ where }),
+  ]);
 
-  return NextResponse.json(allocations);
+  return NextResponse.json({ data: allocations, total, limit, offset });
 }
 
 export async function POST(request: NextRequest) {

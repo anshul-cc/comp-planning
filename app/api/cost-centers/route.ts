@@ -3,25 +3,34 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const costCenters = await prisma.costCenter.findMany({
-    include: {
-      departments: {
-        select: { id: true, name: true, code: true },
-      },
-      _count: {
-        select: { expenses: true },
-      },
-    },
-    orderBy: { code: 'asc' },
-  })
+  const searchParams = request.nextUrl.searchParams
+  const limit = parseInt(searchParams.get('limit') || '25')
+  const offset = parseInt(searchParams.get('offset') || '0')
 
-  return NextResponse.json(costCenters)
+  const [costCenters, total] = await Promise.all([
+    prisma.costCenter.findMany({
+      include: {
+        departments: {
+          select: { id: true, name: true, code: true },
+        },
+        _count: {
+          select: { expenses: true },
+        },
+      },
+      orderBy: { code: 'asc' },
+      take: limit,
+      skip: offset,
+    }),
+    prisma.costCenter.count(),
+  ])
+
+  return NextResponse.json({ data: costCenters, total, limit, offset })
 }
 
 export async function POST(request: NextRequest) {

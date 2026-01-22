@@ -14,19 +14,27 @@ export async function GET(request: NextRequest) {
 
   const where = departmentId ? { departmentId } : {};
 
-  const roles = await prisma.role.findMany({
-    where,
-    include: {
-      department: true,
-      payGrade: true,
-      _count: {
-        select: { employees: true },
-      },
-    },
-    orderBy: { name: 'asc' },
-  });
+  const limit = parseInt(searchParams.get('limit') || '25');
+  const offset = parseInt(searchParams.get('offset') || '0');
 
-  return NextResponse.json(roles);
+  const [roles, total] = await Promise.all([
+    prisma.role.findMany({
+      where,
+      include: {
+        department: true,
+        payGrade: true,
+        _count: {
+          select: { employees: true },
+        },
+      },
+      orderBy: { name: 'asc' },
+      take: limit,
+      skip: offset,
+    }),
+    prisma.role.count({ where }),
+  ]);
+
+  return NextResponse.json({ data: roles, total, limit, offset });
 }
 
 export async function POST(request: NextRequest) {

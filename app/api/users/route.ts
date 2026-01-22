@@ -10,40 +10,49 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const users = await prisma.user.findMany({
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      systemRoleId: true,
-      systemRole: {
-        select: {
-          id: true,
-          name: true,
-          code: true,
-        },
-      },
-      managedBusinessUnits: {
-        select: {
-          id: true,
-          name: true,
-          code: true,
-        },
-      },
-      managedDepartments: {
-        select: {
-          id: true,
-          name: true,
-          code: true,
-        },
-      },
-      createdAt: true,
-    },
-    orderBy: { name: 'asc' },
-  });
+  const searchParams = request.nextUrl.searchParams;
+  const limit = parseInt(searchParams.get('limit') || '25');
+  const offset = parseInt(searchParams.get('offset') || '0');
 
-  return NextResponse.json(users);
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        systemRoleId: true,
+        systemRole: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
+        managedBusinessUnits: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
+        managedDepartments: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
+        createdAt: true,
+      },
+      orderBy: { name: 'asc' },
+      take: limit,
+      skip: offset,
+    }),
+    prisma.user.count(),
+  ]);
+
+  return NextResponse.json({ data: users, total, limit, offset });
 }
 
 export async function POST(request: NextRequest) {
