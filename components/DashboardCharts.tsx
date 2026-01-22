@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import {
   BarChart,
   Bar,
@@ -17,7 +18,7 @@ interface DepartmentData {
   allocated: number
 }
 
-export function DashboardCharts({
+export const DashboardCharts = memo(function DashboardCharts({
   departmentData,
 }: {
   departmentData: DepartmentData[]
@@ -110,4 +111,4 @@ export function DashboardCharts({
       </ResponsiveContainer>
     </div>
   )
-}
+})

@@ -43,9 +43,11 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const existingById = await prisma.employee.findUnique({
-    where: { employeeId },
-  })
+  // Parallelize validation queries for better performance
+  const [existingById, existingByEmail] = await Promise.all([
+    prisma.employee.findUnique({ where: { employeeId } }),
+    prisma.employee.findUnique({ where: { email } }),
+  ])
 
   if (existingById) {
     return NextResponse.json(
@@ -53,10 +55,6 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     )
   }
-
-  const existingByEmail = await prisma.employee.findUnique({
-    where: { email },
-  })
 
   if (existingByEmail) {
     return NextResponse.json(

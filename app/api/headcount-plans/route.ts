@@ -17,55 +17,57 @@ export async function GET(request: NextRequest) {
   if (cycleId) where.cycleId = cycleId;
   if (departmentId) where.departmentId = departmentId;
 
-  const headcountPlans = await prisma.headcountPlan.findMany({
-    where,
-    include: {
-      cycle: true,
-      department: {
-        include: {
-          _count: {
-            select: { employees: true },
+  // Fetch headcount plans and department stats in parallel (fixes N+1 query)
+  const [headcountPlans, deptStats] = await Promise.all([
+    prisma.headcountPlan.findMany({
+      where,
+      include: {
+        cycle: true,
+        department: {
+          include: {
+            _count: {
+              select: { employees: true },
+            },
           },
         },
       },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+      orderBy: { createdAt: 'desc' },
+    }),
+    // Single query to get all department stats instead of N queries
+    prisma.employee.groupBy({
+      by: ['departmentId'],
+      where: { status: 'ACTIVE' },
+      _count: true,
+      _sum: { currentSalary: true },
+    }),
+  ]);
 
-  // Calculate actual headcount from employees
-  const plansWithActuals = await Promise.all(
-    headcountPlans.map(async (plan) => {
-      const actualHeadcount = await prisma.employee.count({
-        where: {
-          departmentId: plan.departmentId,
-          status: 'ACTIVE',
-        },
-      });
-      const actualWageCost = await prisma.employee.aggregate({
-        where: {
-          departmentId: plan.departmentId,
-          status: 'ACTIVE',
-        },
-        _sum: { currentSalary: true },
-      });
-
-      // Calculate fill rate with division by zero handling
-      let fillRate = null;
-      if (plan.plannedHeadcount > 0) {
-        fillRate = (actualHeadcount / plan.plannedHeadcount) * 100;
-      } else if (actualHeadcount === 0) {
-        fillRate = 100; // Both are 0, consider fully staffed
-      }
-
-      return {
-        ...plan,
-        actualHeadcount,
-        actualWageCost: actualWageCost._sum.currentSalary || 0,
-        fillRate,
-        shortfall: plan.plannedHeadcount - actualHeadcount,
-      };
-    })
+  // Create a map for O(1) lookup
+  const statsMap = new Map(
+    deptStats.map((s) => [s.departmentId, { count: s._count, salary: s._sum.currentSalary || 0 }])
   );
+
+  // Map plans with actuals (no additional queries needed)
+  const plansWithActuals = headcountPlans.map((plan) => {
+    const stats = statsMap.get(plan.departmentId) || { count: 0, salary: 0 };
+    const actualHeadcount = stats.count;
+
+    // Calculate fill rate with division by zero handling
+    let fillRate = null;
+    if (plan.plannedHeadcount > 0) {
+      fillRate = (actualHeadcount / plan.plannedHeadcount) * 100;
+    } else if (actualHeadcount === 0) {
+      fillRate = 100; // Both are 0, consider fully staffed
+    }
+
+    return {
+      ...plan,
+      actualHeadcount,
+      actualWageCost: stats.salary,
+      fillRate,
+      shortfall: plan.plannedHeadcount - actualHeadcount,
+    };
+  });
 
   return NextResponse.json(plansWithActuals);
 }
