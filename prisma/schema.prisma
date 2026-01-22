@@ -29,11 +29,13 @@ model User {
   managedDepartments   Department[]   @relation("DepartmentHead")
 
   // Other relationships
-  approvals            Approval[]
-  hiringProposals      HiringProposal[]
-  compensationActions  CompensationAction[]
-  createdCycles        PlanningCycle[]      @relation("CycleCreator")
-  approvalAssignments  ApprovalChainAssignee[]
+  approvals                Approval[]
+  hiringProposals          HiringProposal[]
+  compensationActions      CompensationAction[]
+  createdCycles            PlanningCycle[]      @relation("CycleCreator")
+  approvalAssignments      ApprovalChainAssignee[]
+  workforcePlanAssignments WorkforcePlanAssignment[]
+  budgetOwnerDepartments   Department[]         @relation("BudgetOwner")
 }
 
 // ============================================
@@ -100,22 +102,33 @@ model CostCenter {
 }
 
 model Department {
-  id           String   @id @default(cuid())
-  name         String
-  code         String   @unique
-  headId       String?
-  costCenterId String?
-  location     String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String   @id @default(cuid())
+  name           String
+  code           String   @unique
+  headId         String?
+  budgetOwnerId  String?  // Budget owner (may differ from head)
+  parentDeptId   String?  // For hierarchical departments
+  costCenterId   String?
+  location       String?  // e.g., "Hyderabad, IN"
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  head              User?              @relation("DepartmentHead", fields: [headId], references: [id])
-  costCenter        CostCenter?        @relation(fields: [costCenterId], references: [id])
-  roles             Role[]
-  employees         Employee[]
-  headcountPlans    HeadcountPlan[]
-  budgetAllocations BudgetAllocation[]
-  hiringProposals   HiringProposal[]
+  head                     User?              @relation("DepartmentHead", fields: [headId], references: [id])
+  budgetOwner              User?              @relation("BudgetOwner", fields: [budgetOwnerId], references: [id])
+  parentDept               Department?        @relation("DeptHierarchy", fields: [parentDeptId], references: [id])
+  childDepts               Department[]       @relation("DeptHierarchy")
+  costCenter               CostCenter?        @relation(fields: [costCenterId], references: [id])
+  roles                    Role[]
+  employees                Employee[]
+  positions                Position[]
+  departmentBudgets        DepartmentBudget[]
+  headcountPlans           HeadcountPlan[]
+  budgetAllocations        BudgetAllocation[]
+  hiringProposals          HiringProposal[]
+  workforcePlans           WorkforcePlan[]
+  workforcePlanAssignments WorkforcePlanAssignment[]
+
+  @@index([parentDeptId])
 }
 
 model Role {
@@ -154,13 +167,16 @@ model PlanningCycle {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  createdBy           User?              @relation("CycleCreator", fields: [createdById], references: [id])
-  budgetAllocations   BudgetAllocation[]
-  headcountPlans      HeadcountPlan[]
-  hiringProposals     HiringProposal[]
-  compensationCycles  CompensationCycle[]
-  expenses            Expense[]
-  approvalChainLevels ApprovalChainLevel[]
+  createdBy                User?              @relation("CycleCreator", fields: [createdById], references: [id])
+  budgetAllocations        BudgetAllocation[]
+  headcountPlans           HeadcountPlan[]
+  hiringProposals          HiringProposal[]
+  compensationCycles       CompensationCycle[]
+  expenses                 Expense[]
+  approvalChainLevels      ApprovalChainLevel[]
+  workforcePlans           WorkforcePlan[]
+  workforcePlanAssignments WorkforcePlanAssignment[]
+  departmentBudgets        DepartmentBudget[]
 }
 
 // ============================================
@@ -266,6 +282,7 @@ model PayGrade {
 
   roles     Role[]
   employees Employee[]
+  jobLevels JobLevel[]
 
   @@unique([code, band, level])
 }
@@ -275,24 +292,27 @@ model PayGrade {
 // ============================================
 
 model Employee {
-  id            String    @id @default(cuid())
-  employeeId    String    @unique
-  name          String
-  email         String    @unique
-  title         String
-  departmentId  String
-  roleId        String?
-  payGradeId    String?
-  currentSalary Float
-  hireDate      DateTime
-  status        String    @default("ACTIVE") // ACTIVE, TERMINATED, ON_LEAVE
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  employeeId        String    @unique
+  name              String
+  email             String    @unique
+  title             String
+  departmentId      String
+  roleId            String?
+  payGradeId        String?
+  currentSalary     Float
+  hireDate          DateTime
+  performanceRating String?   // e.g., "Exceeds", "Meets", "Below"
+  location          String?   // e.g., "Hyderabad, Telangana, IN"
+  status            String    @default("ACTIVE") // ACTIVE, TERMINATED, ON_LEAVE
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   department          Department           @relation(fields: [departmentId], references: [id])
   role                Role?                @relation(fields: [roleId], references: [id])
   payGrade            PayGrade?            @relation(fields: [payGradeId], references: [id])
   compensationActions CompensationAction[]
+  assignments         Assignment[]
 
   @@index([departmentId])
   @@index([status])
@@ -451,6 +471,7 @@ model Approval {
   headcountPlanId      String?
   hiringProposalId     String?
   compensationActionId String?
+  workforcePlanId      String?
 
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
@@ -460,6 +481,7 @@ model Approval {
   headcountPlan      HeadcountPlan?      @relation(fields: [headcountPlanId], references: [id])
   hiringProposal     HiringProposal?     @relation(fields: [hiringProposalId], references: [id])
   compensationAction CompensationAction? @relation(fields: [compensationActionId], references: [id])
+  workforcePlan      WorkforcePlan?      @relation(fields: [workforcePlanId], references: [id])
 }
 
 // ============================================
@@ -526,4 +548,344 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([userId])
   @@index([createdAt])
+}
+
+// ============================================
+// JOB ARCHITECTURE (Workforce Planning)
+// ============================================
+
+model JobFamily {
+  id              String         @id @default(cuid())
+  name            String
+  code            String         @unique
+  description     String?
+  benchmarkSource String?        // e.g., "Radford", "Mercer"
+  subFamilies     Json?          // JSONB for flexible sub-family metadata
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  jobSubFamilies JobSubFamily[]
+  jobProfiles    JobProfile[]   // Direct link for simpler queries
+}
+
+model JobSubFamily {
+  id          String    @id @default(cuid())
+  jobFamilyId String
+  name        String
+  code        String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  jobFamily   JobFamily    @relation(fields: [jobFamilyId], references: [id], onDelete: Cascade)
+  jobProfiles JobProfile[]
+  jobRoles    JobRole[]
+
+  @@index([jobFamilyId])
+}
+
+// JobProfile replaces JobRole concept - represents a job template
+model JobProfile {
+  id            String    @id @default(cuid())
+  title         String
+  code          String    @unique
+  familyId      String
+  subFamilyId   String?
+  level         Int?      // Seniority level (1-10)
+  description   String?   // Job description
+  kpis          Json?     // Key performance indicators as JSONB
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  jobFamily          JobFamily           @relation(fields: [familyId], references: [id])
+  subFamily          JobSubFamily?       @relation(fields: [subFamilyId], references: [id])
+  positions          Position[]
+  compensationBands  CompensationBand[]
+
+  @@unique([familyId, title])
+  @@index([familyId])
+  @@index([subFamilyId])
+}
+
+// CompensationBand - geo-based salary ranges with effective dates
+model CompensationBand {
+  id            String    @id @default(cuid())
+  profileId     String
+  geoCode       String    @default("IN-HYD") // Geographic code
+  minSalary     Decimal   @db.Decimal(19, 4)
+  midSalary     Decimal   @db.Decimal(19, 4)
+  maxSalary     Decimal   @db.Decimal(19, 4)
+  currency      String    @default("INR") @db.Char(3)
+  effectiveFrom DateTime  @db.Date
+  effectiveTo   DateTime? @db.Date
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  profile JobProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, geoCode, effectiveFrom])
+  @@index([profileId])
+}
+
+// ============================================
+// POSITION & ASSIGNMENT (The "Chair" Model)
+// ============================================
+
+// Position - The "Chair" - a funded slot that persists regardless of occupancy
+model Position {
+  id                   String    @id @default(cuid())
+  titleOverride        String?   // Optional title override from profile
+  profileId            String
+  deptId               String
+  isFrozen             Boolean   @default(false)
+  targetHireDate       DateTime? @db.Date
+  budgetAllocationId   String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  profile          JobProfile        @relation(fields: [profileId], references: [id])
+  department       Department        @relation(fields: [deptId], references: [id])
+  budgetAllocation PositionBudget?   @relation(fields: [budgetAllocationId], references: [id])
+  assignments      Assignment[]
+
+  @@index([profileId])
+  @@index([deptId])
+  @@index([budgetAllocationId])
+}
+
+// Assignment - Person in Chair - Temporal with matrix support
+model Assignment {
+  id             String    @id @default(cuid())
+  empId          String
+  positionId     String
+  assignmentType String    @default("PRIMARY") // PRIMARY, SECONDARY, ACTING
+  allocationPct  Decimal   @default(100.00) @db.Decimal(5, 2) // 0-100%
+  validFrom      DateTime  @db.Date
+  validTo        DateTime  @default("9999-12-31T00:00:00.000Z") @db.Date
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  employee              Employee              @relation(fields: [empId], references: [id])
+  position              Position              @relation(fields: [positionId], references: [id])
+  compensationSnapshots CompensationSnapshot[]
+
+  @@unique([empId, positionId, validFrom])
+  @@index([positionId])
+  @@index([empId])
+  @@index([validFrom, validTo])
+}
+
+// CompensationSnapshot - Temporal compensation data per assignment
+model CompensationSnapshot {
+  id            String    @id @default(cuid())
+  assignmentId  String
+  componentType String    // Base, Bonus, Equity, Allowance
+  amountLocal   Decimal   @db.Decimal(19, 4)
+  currencyLocal String    @default("INR") @db.Char(3)
+  effectiveFrom DateTime  @db.Date
+  effectiveTo   DateTime  @default("9999-12-31T00:00:00.000Z") @db.Date
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@index([assignmentId])
+  @@index([effectiveFrom, effectiveTo])
+}
+
+// ============================================
+// DEPARTMENT BUDGET & POSITION BUDGET
+// ============================================
+
+// DepartmentBudget - Per-cycle budget for a department
+model DepartmentBudget {
+  id          String   @id @default(cuid())
+  cycleId     String
+  deptId      String
+  currency    String   @default("INR") @db.Char(3)
+  totalBudget Decimal  @db.Decimal(19, 4)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  cycle           PlanningCycle    @relation(fields: [cycleId], references: [id])
+  department      Department       @relation(fields: [deptId], references: [id])
+  positionBudgets PositionBudget[]
+
+  @@unique([cycleId, deptId])
+  @@index([cycleId])
+  @@index([deptId])
+}
+
+// PositionBudget - Links budget to positions
+model PositionBudget {
+  id              String   @id @default(cuid())
+  budgetId        String
+  allocatedAmount Decimal  @db.Decimal(19, 4)
+  consumedAmount  Decimal  @default(0) @db.Decimal(19, 4) // Technical debt - will be replaced by ledger
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  departmentBudget    DepartmentBudget     @relation(fields: [budgetId], references: [id])
+  positions           Position[]
+  budgetTransactions  BudgetTransaction[]
+
+  @@index([budgetId])
+}
+
+// BudgetTransaction - Append-only ledger for budget tracking (v2 pattern)
+model BudgetTransaction {
+  id           String    @id @default(cuid())
+  allocationId String
+  amount       Decimal   @db.Decimal(19, 4) // Negative = encumbrance, positive = release
+  txType       String    // ENCUMBER, RELEASE, ADJUST
+  txDate       DateTime  @db.Date
+  referenceId  String?   // e.g., assignment_id
+  createdAt    DateTime  @default(now())
+
+  positionBudget PositionBudget @relation(fields: [allocationId], references: [id])
+
+  @@index([allocationId])
+  @@index([txDate])
+}
+
+// ============================================
+// LEGACY JOB ARCHITECTURE (Keep for backward compatibility)
+// ============================================
+
+model JobRole {
+  id          String   @id @default(cuid())
+  subFamilyId String
+  name        String
+  code        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subFamily   JobSubFamily         @relation(fields: [subFamilyId], references: [id], onDelete: Cascade)
+  levels      JobLevel[]
+  planEntries WorkforcePlanEntry[]
+
+  @@index([subFamilyId])
+}
+
+model JobLevel {
+  id          String  @id @default(cuid())
+  jobRoleId   String
+  levelCode   String  // IC1, IC2, IC3, M1, M2
+  levelName   String  // Junior, Mid, Senior, Manager, Senior Manager
+  payGradeId  String?
+  avgSalary   Float   @default(0)
+  avgBenefits Float   @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  jobRole     JobRole   @relation(fields: [jobRoleId], references: [id], onDelete: Cascade)
+  payGrade    PayGrade? @relation(fields: [payGradeId], references: [id])
+  planEntries WorkforcePlanEntry[]
+
+  @@unique([jobRoleId, levelCode])
+  @@index([jobRoleId])
+  @@index([payGradeId])
+}
+
+// ============================================
+// WORKFORCE PLANNING
+// ============================================
+
+model WorkforcePlan {
+  id            String    @id @default(cuid())
+  cycleId       String
+  departmentId  String
+  status        String    @default("DRAFT") // DRAFT, SUBMITTED, APPROVED, REJECTED, LOCKED
+  submittedAt   DateTime?
+  submittedById String?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  cycle      PlanningCycle           @relation(fields: [cycleId], references: [id])
+  department Department              @relation(fields: [departmentId], references: [id])
+  scenarios  WorkforcePlanScenario[]
+  approvals  Approval[]
+
+  @@unique([cycleId, departmentId])
+  @@index([cycleId])
+  @@index([departmentId])
+  @@index([status])
+}
+
+model WorkforcePlanScenario {
+  id              String   @id @default(cuid())
+  workforcePlanId String
+  name            String   // "Baseline", "Growth", "Conservative"
+  isBaseline      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  workforcePlan WorkforcePlan        @relation(fields: [workforcePlanId], references: [id], onDelete: Cascade)
+  entries       WorkforcePlanEntry[]
+  exits         PlannedExit[]
+
+  @@index([workforcePlanId])
+}
+
+model WorkforcePlanEntry {
+  id               String  @id @default(cuid())
+  scenarioId       String
+  jobRoleId        String
+  jobLevelId       String
+  currentHeadcount Int     @default(0)
+  q1Hires          Int     @default(0)
+  q2Hires          Int     @default(0)
+  q3Hires          Int     @default(0)
+  q4Hires          Int     @default(0)
+  plannedExits     Int     @default(0)
+  avgCompensation  Float   @default(0)
+  totalPayrollImpact Float @default(0)
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  scenario WorkforcePlanScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  jobRole  JobRole               @relation(fields: [jobRoleId], references: [id])
+  jobLevel JobLevel              @relation(fields: [jobLevelId], references: [id])
+
+  @@unique([scenarioId, jobRoleId, jobLevelId])
+  @@index([scenarioId])
+  @@index([jobRoleId])
+  @@index([jobLevelId])
+}
+
+model PlannedExit {
+  id         String  @id @default(cuid())
+  scenarioId String
+  jobRoleId  String
+  jobLevelId String
+  exitMonth  Int     // 1-12
+  exitCount  Int     @default(1)
+  reason     String  // ATTRITION, RETIREMENT, RESTRUCTURING
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  scenario WorkforcePlanScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@index([scenarioId])
+}
+
+model WorkforcePlanAssignment {
+  id           String   @id @default(cuid())
+  cycleId      String
+  userId       String
+  departmentId String?  // NULL = all departments
+  accessLevel  String   // PLANNER, REVIEWER, ADMIN
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  cycle      PlanningCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  user       User          @relation(fields: [userId], references: [id])
+  department Department?   @relation(fields: [departmentId], references: [id])
+
+  @@unique([cycleId, userId, departmentId])
+  @@index([cycleId])
+  @@index([userId])
 }
