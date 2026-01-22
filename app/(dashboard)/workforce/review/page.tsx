@@ -43,15 +43,20 @@ export default function FinanceReviewPage() {
 
   const fetchPlans = () => {
     setLoading(true)
-    fetch(`/api/workforce-review?status=${filter}`)
-      .then((r) => r.json())
+    setError(null)
+    fetch(`/api/workforce-review?status=${filter}`, { credentials: 'include' })
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
       .then((data) => {
         setPlans(data.data || [])
         setSummary(data.summary || { pending: 0, approved: 0, rejected: 0 })
         setLoading(false)
       })
-      .catch(() => {
-        setError('Failed to load plans')
+      .catch((err) => {
+        console.error('Error loading plans:', err)
+        setError('Failed to load plans. Please try again.')
         setLoading(false)
       })
   }

@@ -3,70 +3,95 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import Link from 'next/link'
 
 async function getWorkforcePlans() {
-  const activeCycle = await prisma.planningCycle.findFirst({
-    where: { status: { in: ['ACTIVE', 'ALLOCATION', 'REVIEW'] } },
-    orderBy: { startDate: 'desc' },
-  })
+  try {
+    const activeCycle = await prisma.planningCycle.findFirst({
+      where: { status: { in: ['ACTIVE', 'ALLOCATION', 'REVIEW'] } },
+      orderBy: { startDate: 'desc' },
+    })
 
-  const cycles = await prisma.planningCycle.findMany({
-    orderBy: { startDate: 'desc' },
-    take: 5,
-  })
+    const cycles = await prisma.planningCycle.findMany({
+      orderBy: { startDate: 'desc' },
+      take: 5,
+    })
 
-  const plans = await prisma.workforcePlan.findMany({
-    where: activeCycle ? { cycleId: activeCycle.id } : {},
-    include: {
-      department: {
-        include: {
-          head: {
-            select: { id: true, name: true },
+    const plans = await prisma.workforcePlan.findMany({
+      where: activeCycle ? { cycleId: activeCycle.id } : {},
+      include: {
+        department: {
+          include: {
+            head: {
+              select: { id: true, name: true },
+            },
           },
         },
-      },
-      cycle: true,
-      scenarios: {
-        where: { isBaseline: true },
-        include: {
-          entries: true,
+        cycle: true,
+        scenarios: {
+          where: { isBaseline: true },
+          include: {
+            entries: true,
+          },
+        },
+        _count: {
+          select: { approvals: true },
         },
       },
-      _count: {
-        select: { approvals: true },
-      },
-    },
-    orderBy: { department: { name: 'asc' } },
-  })
+      orderBy: { department: { name: 'asc' } },
+    })
 
-  // Calculate stats for each plan
-  const plansWithStats = plans.map((plan) => {
-    const baselineScenario = plan.scenarios[0]
-    let totalHeadcount = 0
-    let totalHires = 0
-    let totalPayrollImpact = 0
+    // Calculate stats for each plan
+    const plansWithStats = plans.map((plan) => {
+      const baselineScenario = plan.scenarios[0]
+      let totalHeadcount = 0
+      let totalHires = 0
+      let totalPayrollImpact = 0
 
-    if (baselineScenario) {
-      baselineScenario.entries.forEach((entry) => {
-        totalHeadcount += entry.currentHeadcount
-        totalHires += entry.q1Hires + entry.q2Hires + entry.q3Hires + entry.q4Hires
-        totalPayrollImpact += entry.totalPayrollImpact
-      })
-    }
+      if (baselineScenario) {
+        baselineScenario.entries.forEach((entry) => {
+          totalHeadcount += entry.currentHeadcount
+          totalHires += entry.q1Hires + entry.q2Hires + entry.q3Hires + entry.q4Hires
+          totalPayrollImpact += entry.totalPayrollImpact
+        })
+      }
 
-    return {
-      ...plan,
-      stats: {
-        totalHeadcount,
-        totalHires,
-        totalPayrollImpact,
-      },
-    }
-  })
+      return {
+        ...plan,
+        stats: {
+          totalHeadcount,
+          totalHires,
+          totalPayrollImpact,
+        },
+      }
+    })
 
-  return { plans: plansWithStats, activeCycle, cycles }
+    return { plans: plansWithStats, activeCycle, cycles, error: null }
+  } catch (error) {
+    console.error('Error fetching workforce plans:', error)
+    return { plans: [], activeCycle: null, cycles: [], error: 'Failed to load workforce plans' }
+  }
 }
 
 export default async function WorkforcePage() {
-  const { plans, activeCycle, cycles } = await getWorkforcePlans()
+  const { plans, activeCycle, cycles, error } = await getWorkforcePlans()
+
+  if (error) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Workforce Planning</h1>
+          <p className="mt-1 text-slate-500">Plan and manage your workforce</p>
+        </div>
+        <div className="card p-12 text-center">
+          <div className="text-rose-500 mb-4">
+            <svg className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-slate-900">{error}</h3>
+          <p className="mt-2 text-slate-500">Please try refreshing the page.</p>
+        </div>
+      </div>
+    )
+  }
 
   const totalHeadcount = plans.reduce((sum, p) => sum + p.stats.totalHeadcount, 0)
   const totalHires = plans.reduce((sum, p) => sum + p.stats.totalHires, 0)

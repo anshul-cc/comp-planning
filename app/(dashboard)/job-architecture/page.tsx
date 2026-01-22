@@ -2,33 +2,58 @@ import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 
 async function getJobFamilies() {
-  const jobFamilies = await prisma.jobFamily.findMany({
-    include: {
-      jobSubFamilies: {
-        include: {
-          _count: {
-            select: { jobRoles: true },
+  try {
+    const jobFamilies = await prisma.jobFamily.findMany({
+      include: {
+        jobSubFamilies: {
+          include: {
+            _count: {
+              select: { jobRoles: true },
+            },
           },
         },
+        _count: {
+          select: { jobSubFamilies: true },
+        },
       },
-      _count: {
-        select: { jobSubFamilies: true },
-      },
-    },
-    orderBy: { name: 'asc' },
-  })
+      orderBy: { name: 'asc' },
+    })
 
-  // Get total counts
-  const [totalRoles, totalLevels] = await Promise.all([
-    prisma.jobRole.count(),
-    prisma.jobLevel.count(),
-  ])
+    // Get total counts
+    const [totalRoles, totalLevels] = await Promise.all([
+      prisma.jobRole.count(),
+      prisma.jobLevel.count(),
+    ])
 
-  return { jobFamilies, totalRoles, totalLevels }
+    return { jobFamilies, totalRoles, totalLevels, error: null }
+  } catch (error) {
+    console.error('Error fetching job families:', error)
+    return { jobFamilies: [], totalRoles: 0, totalLevels: 0, error: 'Failed to load job architecture' }
+  }
 }
 
 export default async function JobArchitecturePage() {
-  const { jobFamilies, totalRoles, totalLevels } = await getJobFamilies()
+  const { jobFamilies, totalRoles, totalLevels, error } = await getJobFamilies()
+
+  if (error) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Job Architecture</h1>
+          <p className="mt-1 text-slate-500">Manage job families, sub-families, roles, and levels</p>
+        </div>
+        <div className="card p-12 text-center">
+          <div className="text-rose-500 mb-4">
+            <svg className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-slate-900">{error}</h3>
+          <p className="mt-2 text-slate-500">Please try refreshing the page.</p>
+        </div>
+      </div>
+    )
+  }
 
   const totalSubFamilies = jobFamilies.reduce(
     (sum, f) => sum + f._count.jobSubFamilies,

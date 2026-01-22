@@ -54,7 +54,7 @@ export function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <div className="flex h-full w-56 flex-col bg-gradient-to-b from-slate-900 via-slate-900 to-emerald-950">
+    <div className="flex h-full w-56 min-w-0 flex-col bg-gradient-to-b from-slate-900 via-slate-900 to-emerald-950 flex-shrink-0">
       <div className="flex h-12 items-center gap-2 px-3 border-b border-white/10">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500">
           <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">

@@ -49,13 +49,23 @@ export default function EmployeesPage() {
   }, [])
 
   useEffect(() => {
+    const fetchOptions = { credentials: 'include' as RequestCredentials }
     Promise.all([
-      fetch('/api/employees').then((r) => r.json()),
-      fetch('/api/departments').then((r) => r.json()),
+      fetch('/api/employees', fetchOptions).then((r) => {
+        if (!r.ok) throw new Error('Failed to fetch employees')
+        return r.json()
+      }),
+      fetch('/api/departments', fetchOptions).then((r) => {
+        if (!r.ok) throw new Error('Failed to fetch departments')
+        return r.json()
+      }),
     ]).then(([emp, dept]) => {
       // Handle paginated responses
       setEmployees(Array.isArray(emp) ? emp : emp.data || [])
       setDepartments(Array.isArray(dept) ? dept : dept.data || [])
+      setLoading(false)
+    }).catch((err) => {
+      console.error('Error loading data:', err)
       setLoading(false)
     })
   }, [])
