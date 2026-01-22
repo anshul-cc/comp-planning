@@ -47,8 +47,9 @@ export default function NewBudgetPage() {
         return res.json()
       }),
     ]).then(([cyclesData, departmentsData]) => {
-      setCycles(Array.isArray(cyclesData) ? cyclesData : [])
-      setDepartments(Array.isArray(departmentsData) ? departmentsData : [])
+      // Handle paginated responses (API returns { data: [...], total, limit, offset })
+      setCycles(Array.isArray(cyclesData) ? cyclesData : cyclesData.data || [])
+      setDepartments(Array.isArray(departmentsData) ? departmentsData : departmentsData.data || [])
     }).catch(err => {
       console.error('Error fetching data:', err)
       setError('Failed to load form data. Please refresh the page.')

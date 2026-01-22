@@ -185,7 +185,7 @@ export default function RolesPage() {
             <div className="relative group">
               <button
                 onClick={() => setShowAddRoleModal(true)}
-                className="btn"
+                className="btn-secondary"
               >
                 Add New Role
               </button>
@@ -623,8 +623,8 @@ function AddRoleModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
-      <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full mx-4 my-8 p-6">
+    <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 overflow-y-auto py-8">
+      <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full mx-4 p-6">
         <h2 className="text-xl font-bold text-slate-900 mb-4">Add New Role</h2>
 
         {error && (

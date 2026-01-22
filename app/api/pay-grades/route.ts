@@ -37,11 +37,11 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { name, level, minSalary, maxSalary } = body
+  const { code, name, level, band, minSalary, midSalary, maxSalary, currencyCode, status, notes } = body
 
-  if (!name || level === undefined || !minSalary || !maxSalary) {
+  if (!code || !name || level === undefined || !minSalary || !maxSalary) {
     return NextResponse.json(
-      { error: 'All fields are required' },
+      { error: 'Code, name, level, minSalary, and maxSalary are required' },
       { status: 400 }
     )
   }
@@ -64,12 +64,20 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  const calculatedMid = midSalary ? parseFloat(midSalary) : (parseFloat(minSalary) + parseFloat(maxSalary)) / 2
+
   const payGrade = await prisma.payGrade.create({
     data: {
+      code,
       name,
       level: parseInt(level),
+      band: band ? parseInt(band) : 1,
       minSalary: parseFloat(minSalary),
+      midSalary: calculatedMid,
       maxSalary: parseFloat(maxSalary),
+      currencyCode: currencyCode || 'USD',
+      status: status || 'DRAFT',
+      notes: notes || null,
     },
   })
 
