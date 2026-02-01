@@ -12,6 +12,7 @@ import { getToken } from 'next-auth/jwt'
 const PUBLIC_ROUTES = [
   '/login',
   '/api/auth', // NextAuth routes
+  '/api/init', // One-time database initialization
 ]
 
 // API routes that require specific roles
