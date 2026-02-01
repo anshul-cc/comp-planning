@@ -186,12 +186,15 @@ export default function LoginPage() {
             </form>
           </div>
 
-          <div className="mt-6 p-4 bg-emerald-50 rounded-xl">
-            <p className="text-sm text-emerald-700 text-center">
-              <span className="font-medium">Demo credentials:</span><br />
-              admin@example.com / password123
-            </p>
-          </div>
+          {/* Demo credentials - only shown in development */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+              <p className="text-sm text-amber-700 text-center">
+                <span className="font-medium">Development Mode</span><br />
+                <span className="text-xs">Use CLI to seed demo users: npm run db:seed</span>
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

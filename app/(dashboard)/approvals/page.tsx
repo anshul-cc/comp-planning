@@ -254,38 +254,38 @@ export default function ApprovalsPage() {
                   </div>
 
                   <div className="mt-2 text-sm text-gray-500">
-                    {approval.entityDetails.cycleName && (
-                      <span>Cycle: {String(approval.entityDetails.cycleName)} • </span>
+                    {typeof approval.entityDetails.cycleName === 'string' && approval.entityDetails.cycleName && (
+                      <span>Cycle: {approval.entityDetails.cycleName} • </span>
                     )}
-                    {approval.entityDetails.department && (
-                      <span>Dept: {String(approval.entityDetails.department)} • </span>
+                    {typeof approval.entityDetails.department === 'string' && approval.entityDetails.department && (
+                      <span>Dept: {approval.entityDetails.department} • </span>
                     )}
-                    {approval.entityDetails.proposedBy && (
-                      <span>Proposed by: {String(approval.entityDetails.proposedBy)} • </span>
+                    {typeof approval.entityDetails.proposedBy === 'string' && approval.entityDetails.proposedBy && (
+                      <span>Proposed by: {approval.entityDetails.proposedBy} • </span>
                     )}
                     <span>Approver: {approval.approver.name}</span>
                   </div>
                 </div>
 
                 <div className="text-right">
-                  {approval.entityDetails.totalBudget && (
+                  {typeof approval.entityDetails.totalBudget === 'number' && (
                     <p className="text-2xl font-semibold text-gray-900">
-                      {formatCurrency(Number(approval.entityDetails.totalBudget))}
+                      {formatCurrency(approval.entityDetails.totalBudget)}
                     </p>
                   )}
-                  {approval.entityDetails.proposedSalary && (
+                  {typeof approval.entityDetails.proposedSalary === 'number' && (
                     <p className="text-2xl font-semibold text-gray-900">
-                      {formatCurrency(Number(approval.entityDetails.proposedSalary))}
+                      {formatCurrency(approval.entityDetails.proposedSalary)}
                     </p>
                   )}
-                  {approval.entityDetails.plannedHeadcount !== undefined && (
+                  {typeof approval.entityDetails.plannedHeadcount === 'number' && (
                     <p className="text-xl font-semibold text-gray-900">
-                      {Number(approval.entityDetails.plannedHeadcount)} positions
+                      {approval.entityDetails.plannedHeadcount} positions
                     </p>
                   )}
-                  {approval.entityDetails.quantity && (
+                  {typeof approval.entityDetails.quantity === 'number' && (
                     <p className="text-xl font-semibold text-gray-900">
-                      {Number(approval.entityDetails.quantity)} position(s)
+                      {approval.entityDetails.quantity} position(s)
                     </p>
                   )}
                 </div>
@@ -295,8 +295,8 @@ export default function ApprovalsPage() {
                 <div className="flex justify-between items-center">
                   <div className="text-sm text-gray-500">
                     <span>Created: {formatDate(approval.createdAt)}</span>
-                    {approval.entityDetails.actionType && (
-                      <span className="ml-4">Action: {String(approval.entityDetails.actionType)}</span>
+                    {typeof approval.entityDetails.actionType === 'string' && (
+                      <span className="ml-4">Action: {approval.entityDetails.actionType}</span>
                     )}
                   </div>
 

@@ -66,8 +66,8 @@ A comprehensive Annual Operating Plan (AOP), Budget, Headcount, and Compensation
 
 1. Clone the repository:
 ```bash
-git clone git@github.com:anshul-cc/experiment.git
-cd experiment
+git clone git@github.com:anshul-cc/comp-planning.git
+cd comp-planning
 ```
 
 2. Install dependencies:

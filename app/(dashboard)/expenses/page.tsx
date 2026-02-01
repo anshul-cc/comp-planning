@@ -254,11 +254,11 @@ function SummaryCard({
   title: string
   value: string
   subtitle: string
-  color: 'emerald' | 'emerald' | 'amber' | 'rose' | 'slate'
+  color: 'emerald' | 'blue' | 'amber' | 'rose' | 'slate'
 }) {
   const bgColors = {
     emerald: 'from-emerald-50 to-teal-50',
-    emerald: 'from-emerald-50 to-teal-50',
+    blue: 'from-blue-50 to-indigo-50',
     amber: 'from-amber-50 to-orange-50',
     rose: 'from-rose-50 to-pink-50',
     slate: 'from-slate-50 to-slate-100',
