@@ -13,6 +13,7 @@ const PUBLIC_ROUTES = [
   '/login',
   '/api/auth', // NextAuth routes
   '/api/init', // One-time database initialization
+  '/api/health', // Health check endpoint
 ]
 
 // API routes that require specific roles
