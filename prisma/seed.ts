@@ -565,6 +565,182 @@ async function main() {
   console.log('✓ Roles created')
 
   // ============================================
+  // JOB ARCHITECTURE
+  // ============================================
+  console.log('Creating job architecture...')
+
+  // Job Families
+  const jfEngineering = await prisma.jobFamily.upsert({
+    where: { code: 'JF-ENG' },
+    update: {},
+    create: {
+      code: 'JF-ENG',
+      name: 'Engineering',
+      description: 'Software engineering, infrastructure, and technical roles',
+    },
+  })
+
+  const jfProduct = await prisma.jobFamily.upsert({
+    where: { code: 'JF-PROD' },
+    update: {},
+    create: {
+      code: 'JF-PROD',
+      name: 'Product',
+      description: 'Product management and design roles',
+    },
+  })
+
+  const jfSales = await prisma.jobFamily.upsert({
+    where: { code: 'JF-SALES' },
+    update: {},
+    create: {
+      code: 'JF-SALES',
+      name: 'Sales & Marketing',
+      description: 'Sales, marketing, and business development roles',
+    },
+  })
+
+  const jfOperations = await prisma.jobFamily.upsert({
+    where: { code: 'JF-OPS' },
+    update: {},
+    create: {
+      code: 'JF-OPS',
+      name: 'Operations',
+      description: 'Operations, finance, and HR roles',
+    },
+  })
+
+  // Job Sub-Families
+  const jsfSoftware = await prisma.jobSubFamily.upsert({
+    where: { code: 'JSF-SWE' },
+    update: {},
+    create: {
+      code: 'JSF-SWE',
+      name: 'Software Engineering',
+      jobFamilyId: jfEngineering.id,
+    },
+  })
+
+  const jsfInfra = await prisma.jobSubFamily.upsert({
+    where: { code: 'JSF-INFRA' },
+    update: {},
+    create: {
+      code: 'JSF-INFRA',
+      name: 'Infrastructure',
+      jobFamilyId: jfEngineering.id,
+    },
+  })
+
+  const jsfProdMgmt = await prisma.jobSubFamily.upsert({
+    where: { code: 'JSF-PM' },
+    update: {},
+    create: {
+      code: 'JSF-PM',
+      name: 'Product Management',
+      jobFamilyId: jfProduct.id,
+    },
+  })
+
+  const jsfDesign = await prisma.jobSubFamily.upsert({
+    where: { code: 'JSF-DES' },
+    update: {},
+    create: {
+      code: 'JSF-DES',
+      name: 'Design',
+      jobFamilyId: jfProduct.id,
+    },
+  })
+
+  // Job Roles linked to Sub-Families
+  const jrSwe = await prisma.jobRole.upsert({
+    where: { code: 'JR-SWE' },
+    update: {},
+    create: {
+      code: 'JR-SWE',
+      name: 'Software Engineer',
+      subFamilyId: jsfSoftware.id,
+    },
+  })
+
+  const jrSrSwe = await prisma.jobRole.upsert({
+    where: { code: 'JR-SR-SWE' },
+    update: {},
+    create: {
+      code: 'JR-SR-SWE',
+      name: 'Senior Software Engineer',
+      subFamilyId: jsfSoftware.id,
+    },
+  })
+
+  const jrStaffSwe = await prisma.jobRole.upsert({
+    where: { code: 'JR-STAFF-SWE' },
+    update: {},
+    create: {
+      code: 'JR-STAFF-SWE',
+      name: 'Staff Software Engineer',
+      subFamilyId: jsfSoftware.id,
+    },
+  })
+
+  const jrSre = await prisma.jobRole.upsert({
+    where: { code: 'JR-SRE' },
+    update: {},
+    create: {
+      code: 'JR-SRE',
+      name: 'Site Reliability Engineer',
+      subFamilyId: jsfInfra.id,
+    },
+  })
+
+  const jrPm = await prisma.jobRole.upsert({
+    where: { code: 'JR-PM' },
+    update: {},
+    create: {
+      code: 'JR-PM',
+      name: 'Product Manager',
+      subFamilyId: jsfProdMgmt.id,
+    },
+  })
+
+  const jrSrPm = await prisma.jobRole.upsert({
+    where: { code: 'JR-SR-PM' },
+    update: {},
+    create: {
+      code: 'JR-SR-PM',
+      name: 'Senior Product Manager',
+      subFamilyId: jsfProdMgmt.id,
+    },
+  })
+
+  // Create Job Levels for each Job Role
+  const levelCodes = ['IC1', 'IC2', 'IC3', 'M1', 'M2']
+  const levelNames = ['Junior', 'Mid-Level', 'Senior', 'Manager', 'Senior Manager']
+
+  for (const jobRole of [jrSwe, jrSrSwe, jrStaffSwe, jrSre, jrPm, jrSrPm]) {
+    for (let i = 0; i < levelCodes.length; i++) {
+      await prisma.jobLevel.upsert({
+        where: {
+          jobRoleId_levelCode: {
+            jobRoleId: jobRole.id,
+            levelCode: levelCodes[i],
+          },
+        },
+        update: {},
+        create: {
+          jobRoleId: jobRole.id,
+          levelCode: levelCodes[i],
+          levelName: levelNames[i],
+          payGradeId: payGrades[Math.min(i, payGrades.length - 1)].id,
+          avgSalary: 50000 + i * 25000,
+          avgBenefits: 10000 + i * 5000,
+        },
+      })
+    }
+  }
+
+  console.log('✓ Job architecture created')
+
+  // ============================================
   // EMPLOYEES
   // ============================================
   console.log('Creating employees...')
