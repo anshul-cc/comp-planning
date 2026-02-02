@@ -4,10 +4,13 @@ import { SYSTEM_ROLES } from '../lib/permissions'
 
 const prisma = new PrismaClient()
 
+// Security: Use same bcrypt rounds as auth.ts (12 rounds per security requirements)
+const BCRYPT_ROUNDS = 12
+
 async function main() {
   console.log('🌱 Seeding database...\n')
 
-  const hashedPassword = await bcrypt.hash('password123', 10)
+  const hashedPassword = await bcrypt.hash('password123', BCRYPT_ROUNDS)
 
   // ============================================
   // SYSTEM ROLES & PERMISSIONS
